@@ -1,8 +1,13 @@
 ---
 title: 从ReentrantLock的实现看AQS的原理及应用
+description: ReentrantLock与AQS原理深度解析：详解ReentrantLock可重入锁实现、公平锁与非公平锁区别、基于AQS的加锁解锁流程、与synchronized性能对比。
 category: Java
 tag:
   - Java并发
+head:
+  - - meta
+    - name: keywords
+      content: ReentrantLock,AQS,公平锁,非公平锁,可重入锁,lock unlock,ReentrantLock原理,synchronized对比
 ---
 
 > 本文转载自：<https://tech.meituan.com/2019/12/05/aqs-theory-and-apply.html>
@@ -503,9 +508,9 @@ private void setHead(Node node) {
 
 // 靠前驱节点判断当前线程是否应该被阻塞
 private static boolean shouldParkAfterFailedAcquire(Node pred, Node node) {
-  // 获取头结点的节点状态
+  // 获取前驱结点的节点状态
   int ws = pred.waitStatus;
-  // 说明头结点处于唤醒状态
+  // 说明前驱结点处于唤醒状态
   if (ws == Node.SIGNAL)
     return true;
   // 通过枚举值我们知道waitStatus>0是取消状态

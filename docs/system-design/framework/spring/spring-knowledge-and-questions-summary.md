@@ -1,8 +1,13 @@
 ---
 title: Spring常见面试题总结
+description: Spring框架核心面试题详解，涵盖IoC容器、AOP原理、Bean生命周期、依赖注入等Spring核心知识点。
 category: 框架
 tag:
   - Spring
+head:
+  - - meta
+    - name: keywords
+      content: Spring面试题,Spring框架,Bean生命周期,IoC,AOP,依赖注入,事务,Spring常见问题
 ---
 
 <!-- @include: @small-advertisement.snippet.md -->
@@ -88,7 +93,7 @@ Spring 团队提倡测试驱动开发（TDD）。有了控制反转 (IoC)的帮�
 
 Spring 的测试模块对 JUnit（单元测试框架）、TestNG（类似 JUnit）、Mockito（主要用来 Mock 对象）、PowerMock（解决 Mockito 的问题比如无法模拟 final, static， private 方法）等等常用的测试框架支持的都比较好。
 
-### Spring,Spring MVC,Spring Boot 之间什么关系?
+### ⭐️Spring,Spring MVC,Spring Boot 之间什么关系?
 
 很多人对 Spring,Spring MVC,Spring Boot 这三者傻傻分不清楚！这里简单介绍一下这三者，其实很简单，没有什么高深的东西。
 
@@ -110,29 +115,44 @@ Spring Boot 只是简化了配置，如果你需要构建 MVC 架构的 Web 程�
 
 ## Spring IoC
 
-### 谈谈自己对于 Spring IoC 的了解
+### ⭐️什么是 IoC?
 
-**IoC（Inversion of Control:控制反转）** 是一种设计思想，而不是一个具体的技术实现。IoC 的思想就是将原本在程序中手动创建对象的控制权，交由 Spring 框架来管理。不过， IoC 并非 Spring 特有，在其他语言中也有应用。
+IoC （Inversion of Control ）即控制反转/反转控制。它是一种思想不是一个技术实现。描述的是：Java 开发领域对象的创建以及管理的问题。
 
-**为什么叫控制反转？**
+例如：现有类 A 依赖于类 B
 
-- **控制**：指的是对象创建（实例化、管理）的权力
-- **反转**：控制权交给外部环境（Spring 框架、IoC 容器）
+- **传统的开发方式** ：往往是在类 A 中手动通过 new 关键字来 new 一个 B 的对象出来
+- **使用 IoC 思想的开发方式** ：不通过 new 关键字来创建对象，而是通过 IoC 容器(Spring 框架) 来帮助我们实例化对象。我们需要哪个对象，直接从 IoC 容器里面去取即可。
 
-![IoC 图解](https://oss.javaguide.cn/java-guide-blog/frc-365faceb5697f04f31399937c059c162.png)
+从以上两种开发方式的对比来看：我们 “丧失了一个权力” (创建、管理对象的权力)，从而也得到了一个好处（不用再考虑对象的创建、管理等一系列的事情）
 
-将对象之间的相互依赖关系交给 IoC 容器来管理，并由 IoC 容器完成对象的注入。这样可以很大程度上简化应用的开发，把应用从复杂的依赖关系中解放出来。 IoC 容器就像是一个工厂一样，当我们需要创建一个对象的时候，只需要配置好配置文件/注解即可，完全不用考虑对象是如何被创建出来的。
+**为什么叫控制反转?**
 
-在实际项目中一个 Service 类可能依赖了很多其他的类，假如我们需要实例化这个 Service，你可能要每次都要搞清这个 Service 所有底层类的构造函数，这可能会把人逼疯。如果利用 IoC 的话，你只需要配置好，然后在需要的地方引用就行了，这大大增加了项目的可维护性且降低了开发难度。
+- **控制** ：指的是对象创建（实例化、管理）的权力
+- **反转** ：控制权交给外部环境（IoC 容器）
 
-在 Spring 中， IoC 容器是 Spring 用来实现 IoC 的载体， IoC 容器实际上就是个 Map（key，value），Map 中存放的是各种对象。
+![IoC 图解](https://oss.javaguide.cn/github/javaguide/system-design/framework/spring/IoC&Aop-ioc-illustration.png)
 
-Spring 时代我们一般通过 XML 文件来配置 Bean，后来开发人员觉得 XML 文件来配置不太好，于是 SpringBoot 注解配置就慢慢开始流行起来。
+### ⭐️IoC 解决了什么问题?
 
-相关阅读：
+IoC 的思想就是两方之间不互相依赖，由第三方容器来管理相关资源。这样有什么好处呢？
 
-- [IoC 源码阅读](https://javadoop.com/post/spring-ioc)
-- [IoC & AOP 详解（快速搞懂）](./ioc-and-aop.md)
+1. 对象之间的耦合度或者说依赖程度降低；
+2. 资源变的容易管理；比如你用 Spring 容器提供的话很容易就可以实现一个单例。
+
+例如：现有一个针对 User 的操作，利用 Service 和 Dao 两层结构进行开发
+
+在没有使用 IoC 思想的情况下，Service 层想要使用 Dao 层的具体实现的话，需要通过 new 关键字在`UserServiceImpl` 中手动 new 出 `IUserDao` 的具体实现类 `UserDaoImpl`（不能直接 new 接口类）。
+
+很完美，这种方式也是可以实现的，但是我们想象一下如下场景：
+
+开发过程中突然接到一个新的需求，针对`IUserDao` 接口开发出另一个具体实现类。因为 Server 层依赖了`IUserDao`的具体实现，所以我们需要修改`UserServiceImpl`中 new 的对象。如果只有一个类引用了`IUserDao`的具体实现，可能觉得还好，修改起来也不是很费力气，但是如果有许许多多的地方都引用了`IUserDao`的具体实现的话，一旦需要更换`IUserDao` 的实现方式，那修改起来将会非常的头疼。
+
+![IoC&Aop-ioc-illustration-dao-service](https://oss.javaguide.cn/github/javaguide/system-design/framework/spring/IoC&Aop-ioc-illustration-dao-service.png)
+
+使用 IoC 的思想，我们将对象的控制权（创建、管理）交由 IoC 容器去管理，我们在使用的时候直接向 IoC 容器 “要” 就可以了
+
+![](https://oss.javaguide.cn/github/javaguide/system-design/framework/spring/IoC&Aop-ioc-illustration-dao.png)
 
 ### 什么是 Spring Bean？
 
@@ -215,39 +235,50 @@ Spring 内置的 `@Autowired` 以及 JDK 内置的 `@Resource` 和 `@Inject` 都
 
 `@Autowired` 和`@Resource`使用的比较多一些。
 
-### @Autowired 和 @Resource 的区别是什么？
+### ⭐️@Autowired 和 @Resource 的区别是什么？
 
-`Autowired` 属于 Spring 内置的注解，默认的注入方式为`byType`（根据类型进行匹配），也就是说会优先根据接口类型去匹配并注入 Bean （接口的实现类）。
+`@Autowired` 是 Spring 内置的注解，默认注入逻辑为**先按类型（byType）匹配，若存在多个同类型 Bean，则再尝试按名称（byName）筛选**。
 
-**这会有什么问题呢？** 当一个接口存在多个实现类的话，`byType`这种方式就无法正确注入对象了，因为这个时候 Spring 会同时找到多个满足条件的选择，默认情况下它自己不知道选择哪一个。
+具体来说：
 
-这种情况下，注入方式会变为 `byName`（根据名称进行匹配），这个名称通常就是类名（首字母小写）。就比如说下面代码中的 `smsService` 就是我这里所说的名称，这样应该比较好理解了吧。
+1. 优先根据接口 / 类的类型在 Spring 容器中查找匹配的 Bean。若只找到一个符合类型的 Bean，直接注入，无需考虑名称；
+2. 若找到多个同类型的 Bean（例如一个接口有多个实现类），则会尝试通过**属性名或参数名**与 Bean 的名称进行匹配（默认 Bean 名称为类名首字母小写，除非通过 `@Bean(name = "...")` 或 `@Component("...")` 显式指定）。
+
+当一个接口存在多个实现类时：
+
+- 若属性名与某个 Bean 的名称一致，则注入该 Bean；
+- 若属性名与所有 Bean 名称都不匹配，会抛出 `NoUniqueBeanDefinitionException`，此时需要通过 `@Qualifier` 显式指定要注入的 Bean 名称。
+
+举例说明：
 
 ```java
-// smsService 就是我们上面所说的名称
+// SmsService 接口有两个实现类：SmsServiceImpl1、SmsServiceImpl2（均被 Spring 管理）
+
+// 报错：byType 匹配到多个 Bean，且属性名 "smsService" 与两个实现类的默认名称（smsServiceImpl1、smsServiceImpl2）都不匹配
 @Autowired
 private SmsService smsService;
-```
 
-举个例子，`SmsService` 接口有两个实现类: `SmsServiceImpl1`和 `SmsServiceImpl2`，且它们都已经被 Spring 容器所管理。
-
-```java
-// 报错，byName 和 byType 都无法匹配到 bean
-@Autowired
-private SmsService smsService;
-// 正确注入 SmsServiceImpl1 对象对应的 bean
+// 正确：属性名 "smsServiceImpl1" 与实现类 SmsServiceImpl1 的默认名称匹配
 @Autowired
 private SmsService smsServiceImpl1;
-// 正确注入  SmsServiceImpl1 对象对应的 bean
-// smsServiceImpl1 就是我们上面所说的名称
+
+// 正确：通过 @Qualifier 显式指定 Bean 名称 "smsServiceImpl1"
 @Autowired
 @Qualifier(value = "smsServiceImpl1")
 private SmsService smsService;
 ```
 
-我们还是建议通过 `@Qualifier` 注解来显式指定名称而不是依赖变量的名称。
+实际开发实践中，我们还是建议通过 `@Qualifier` 注解来显式指定名称而不是依赖变量的名称。
 
-`@Resource`属于 JDK 提供的注解，默认注入方式为 `byName`。如果无法通过名称匹配到对应的 Bean 的话，注入方式会变为`byType`。
+`@Resource` 源自 **JSR-250** 规范（标准 Java 规范），在 JDK 6 到 JDK 10 中，它确实存在于 JDK 提供的包中。不过，从 JDK 11 开始，它不再默认存在于 JDK 内部，你需要引入额外的依赖 `javax.annotation-api`才能使用。
+
+Spring 对 `@Resource`（无参数情况）的处理逻辑如下：
+
+1. **按名称（byName）匹配：** 默认取字段名（Field Name）作为 bean 的名称去容器中查找。如果找到了该名称的 Bean，则直接注入。
+2. **回退到按类型（byType）匹配：** 如果**没有**找到同名的 Bean，Spring 会退而求其次，尝试根据字段的**类型**去查找。**按类型匹配的结果判定**
+   - **找到 1 个 Bean**：注入成功。
+   - **找到 0 个 Bean**：抛出异常 (`NoSuchBeanDefinitionException`)。
+   - **找到 >1 个 Bean**：抛出异常 (`NoUniqueBeanDefinitionException`)。
 
 `@Resource` 有两个比较重要且日常开发常用的属性：`name`（名称）、`type`（类型）。
 
@@ -272,12 +303,14 @@ private SmsService smsServiceImpl1;
 private SmsService smsService;
 ```
 
-简单总结一下：
+**简单总结一下**：
 
 - `@Autowired` 是 Spring 提供的注解，`@Resource` 是 JDK 提供的注解。
 - `Autowired` 默认的注入方式为`byType`（根据类型进行匹配），`@Resource`默认注入方式为 `byName`（根据名称进行匹配）。
 - 当一个接口存在多个实现类的情况下，`@Autowired` 和`@Resource`都需要通过名称才能正确匹配到对应的 Bean。`Autowired` 可以通过 `@Qualifier` 注解来显式指定名称，`@Resource`可以通过 `name` 属性来显式指定名称。
 - `@Autowired` 支持在构造函数、方法、字段和参数上使用。`@Resource` 主要用于字段和方法上的注入，不支持在构造函数或参数上使用。
+
+考虑到 `@Resource` 的语义更清晰（名称优先），并且是 Java 标准，能减少对 Spring 框架的强耦合，我们通常**更推荐使用 `@Resource`**，尤其是在需要按名称注入的场景下。而 `@Autowired` 配合构造器注入，在实现依赖注入的不可变性和强制性方面有优势，也是一种非常好的实践。
 
 ### 注入 Bean 的方式有哪些？
 
@@ -334,7 +367,7 @@ public class UserService {
 }
 ```
 
-### 构造函数注入还是 Setter 注入？
+### ⭐️构造函数注入还是 Setter 注入？
 
 Spring 官方有对这个问题的回答：<https://docs.spring.io/spring-framework/reference/core/beans/dependencies/factory-collaborators.html#beans-setter-injection>。
 
@@ -351,7 +384,7 @@ Spring 官方有对这个问题的回答：<https://docs.spring.io/spring-framew
 
 在某些情况下（例如第三方类不提供 Setter 方法），构造函数注入可能是**唯一的选择**。
 
-### Bean 的作用域有哪些?
+### ⭐️Bean 的作用域有哪些?
 
 Spring 中 Bean 的作用域通常有下面几种：
 
@@ -380,7 +413,7 @@ public Person personPrototype() {
 }
 ```
 
-### Bean 是线程安全的吗？
+### ⭐️Bean 是线程安全的吗？
 
 Spring 框架中的 Bean 是否线程安全，取决于其作用域和状态。
 
@@ -451,7 +484,7 @@ public class UserThreadLocal {
 }
 ```
 
-### Bean 的生命周期了解么?
+### ⭐️Bean 的生命周期了解么?
 
 1. **创建 Bean 的实例**：Bean 容器首先会找到配置文件中的 Bean 定义，然后使用 Java 反射 API 来创建 Bean 的实例。
 2. **Bean 属性赋值/填充**：为 Bean 设置相关属性和依赖，例如`@Autowired` 等注解注入的对象、`@Value` 注入的值、`setter`方法或构造函数注入依赖和值、`@Resource`注入的各种资源。
@@ -560,7 +593,7 @@ public interface InitializingBean {
 
 ## Spring AOP
 
-### 谈谈自己对于 AOP 的了解
+### ⭐️谈谈自己对于 AOP 的了解
 
 AOP(Aspect-Oriented Programming:面向切面编程)能够将那些与业务无关，却为业务模块所共同调用的逻辑或责任（例如事务处理、日志管理、权限控制等）封装起来，便于减少系统的重复代码，降低模块间的耦合度，并有利于未来的可拓展性和可维护性。
 
@@ -582,15 +615,24 @@ AOP 切面编程涉及到的一些专业术语：
 | 切面(Aspect)      |                     切入点(Pointcut)+通知(Advice)                     |
 | Weaving(织入)     |           将通知应用到目标对象，进而生成代理对象的过程动作            |
 
-### Spring AOP 和 AspectJ AOP 有什么区别？
+### ⭐️Spring AOP 和 AspectJ AOP 有什么区别？
 
-**Spring AOP 属于运行时增强，而 AspectJ 是编译时增强。** Spring AOP 基于代理(Proxying)，而 AspectJ 基于字节码操作(Bytecode Manipulation)。
+| 特性           | Spring AOP                                               | AspectJ                                    |
+| -------------- | -------------------------------------------------------- | ------------------------------------------ |
+| **增强方式**   | 运行时增强（基于动态代理）                               | 编译时增强、类加载时增强（直接操作字节码） |
+| **切入点支持** | 方法级（Spring Bean 范围内，不支持 final 和 staic 方法） | 方法级、字段、构造器、静态方法等           |
+| **性能**       | 运行时依赖代理，有一定开销，切面多时性能较低             | 运行时无代理开销，性能更高                 |
+| **复杂性**     | 简单，易用，适合大多数场景                               | 功能强大，但相对复杂                       |
+| **使用场景**   | Spring 应用下比较简单的 AOP 需求                         | 高性能、高复杂度的 AOP 需求                |
 
-Spring AOP 已经集成了 AspectJ ，AspectJ 应该算的上是 Java 生态系统中最完整的 AOP 框架了。AspectJ 相比于 Spring AOP 功能更加强大，但是 Spring AOP 相对来说更简单，
+**如何选择？**
 
-如果我们的切面比较少，那么两者性能差异不大。但是，当切面太多的话，最好选择 AspectJ ，它比 Spring AOP 快很多。
+- **功能考量**：AspectJ 支持更复杂的 AOP 场景，Spring AOP 更简单易用。如果你需要增强 `final` 方法、静态方法、字段访问、构造器调用等，或者需要在非 Spring 管理的对象上应用增强逻辑，AspectJ 是唯一的选择。
+- **性能考量**：切面数量较少时两者性能差异不大，但切面较多时 AspectJ 性能更优。
 
-### AOP 常见的通知类型有哪些？
+**一句话总结**：简单场景优先使用 Spring AOP；复杂场景或高性能需求时，选择 AspectJ。
+
+### ⭐️AOP 常见的通知类型有哪些？
 
 ![](https://oss.javaguide.cn/github/javaguide/system-design/framework/spring/aspectj-advice-types.jpg)
 
@@ -681,7 +723,7 @@ MVC 是一种设计模式，Spring MVC 是一款很优秀的 MVC 框架。Spring
 - **`Handler`**：**请求处理器**，处理实际请求的处理器。
 - **`ViewResolver`**：**视图解析器**，根据 `Handler` 返回的逻辑视图 / 视图，解析并渲染真正的视图，并传递给 `DispatcherServlet` 响应客户端
 
-### SpringMVC 工作原理了解吗?
+### ⭐️SpringMVC 工作原理了解吗?
 
 **Spring MVC 原理如下图所示：**
 
@@ -772,7 +814,7 @@ public class GlobalExceptionHandler {
 - **适配器模式** : Spring AOP 的增强或通知(Advice)使用到了适配器模式、spring MVC 中也是用到了适配器模式适配`Controller`。
 - ……
 
-## Spring 的循环依赖
+## ⭐️Spring 的循环依赖
 
 ### Spring 循环依赖了解吗，怎么解决？
 
@@ -874,7 +916,7 @@ class B {
 - 那么此时就去三级缓存中调用 `getObject()` 方法去获取 A 的 **前期暴露的对象** ，也就是调用上边加入的 `getEarlyBeanReference()` 方法，生成一个 A 的 **前期暴露对象**；
 - 然后就将这个 `ObjectFactory` 从三级缓存中移除，并且将前期暴露对象放入到二级缓存中，那么 B 就将这个前期暴露对象注入到依赖，来支持循环依赖。
 
-**只用两级缓存够吗？** 在没有 AOP 的情况下，确实可以只使用一级和三级缓存来解决循环依赖问题。但是，当涉及到 AOP 时，二级缓存就显得非常重要了，因为它确保了即使在 Bean 的创建过程中有多次对早期引用的请求，也始终只返回同一个代理对象，从而避免了同一个 Bean 有多个代理对象的问题。
+**只用两级缓存够吗？** 在没有 AOP 的情况下，确实可以只使用一级和二级缓存来解决循环依赖问题。但是，当涉及到 AOP 时，三级缓存就显得非常重要了，因为它确保了即使在 Bean 的创建过程中有多次对早期引用的请求，也始终只返回同一个代理对象，从而避免了同一个 Bean 有多个代理对象的问题。
 
 **最后总结一下 Spring 如何解决三级缓存**：
 
@@ -930,7 +972,7 @@ SpringBoot 2.6.x 以后，如果你不想重构循环依赖的代码的话，也
 - 在导致循环依赖的 Bean 上添加 `@Lazy` 注解，这是一种比较推荐的方式。`@Lazy` 用来标识类是否需要懒加载/延迟加载，可以作用在类上、方法上、构造器上、方法参数上、成员变量中。
 - ……
 
-## Spring 事务
+## ⭐️Spring 事务
 
 关于 Spring 事务的详细介绍，可以看我写的 [Spring 事务详解](https://javaguide.cn/system-design/framework/spring/spring-transaction.html) 这篇文章。
 
@@ -1143,7 +1185,7 @@ Spring Security 重要的是实战，这里仅对小部分知识点进行总结�
 
 可以看看松哥的这篇文章：[Spring Security 中的 hasRole 和 hasAuthority 有区别吗？](https://mp.weixin.qq.com/s/GTNOa2k9_n_H0w24upClRw)，介绍的比较详细。
 
-### 如何对密码进行加密？
+### ⭐️如何对密码进行加密？
 
 如果我们需要保存密码这类敏感数据到数据库的话，需要先加密再保存。
 

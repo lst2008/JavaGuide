@@ -1,6 +1,11 @@
 ---
 title: 代码命名指南
+description: 代码命名规范指南，涵盖变量、方法、类的命名原则与技巧，提升代码可读性和可维护性。
 category: 代码质量
+head:
+  - - meta
+    - name: keywords
+      content: 代码命名,命名规范,变量命名,函数命名,类命名,可读性,代码质量,Code Review
 ---
 
 我还记得我刚工作那一段时间， 项目 Code Review 的时候，我经常因为变量命名不规范而被 “diss”!

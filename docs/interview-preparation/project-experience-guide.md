@@ -1,11 +1,16 @@
 ---
 title: 项目经验指南
+description: 项目经验指南：针对没有项目/项目平淡的求职者，给出获取实战项目经验的方法与选择建议，并讲清如何做出项目亮点、如何复盘与表达，提升简历与面试竞争力。
 category: 面试准备
 icon: project
+head:
+  - - meta
+    - name: keywords
+      content: 项目经验,校招项目,实战项目,项目亮点,简历项目描述,后端项目,面试项目准备,项目复盘
 ---
 
 ::: tip 友情提示
-本文节选自 **[《Java 面试指北》](../zhuanlan/java-mian-shi-zhi-bei.md)**。这是一份教你如何更高效地准备面试的小册，涵盖常见八股文（系统设计、常见框架、分布式、高并发 ……）、优质面经等内容。
+本文节选自 **[《Java 面试指北》](../zhuanlan/java-mian-shi-zhi-bei.md)**。这是一份教你如何更高效地准备面试的专栏，内容和 JavaGuide 互补，涵盖常见八股文（系统设计、常见框架、分布式、高并发 ……）、优质面经等内容。
 :::
 
 ## 没有项目经验怎么办?
@@ -72,9 +77,9 @@ GitHub 或者码云上面有很多实战类别项目，你可以选择一个来�
 
 ## 有没有还不错的项目推荐？
 
-**[《Java 面试指北》](../zhuanlan/java-mian-shi-zhi-bei.md)** 的「面试准备篇」中有一篇文章专门整理了一些比较高质量的实战项目，非常适合用来学习或者作为项目经验。
+**[《Java 面试指北》](../zhuanlan/java-mian-shi-zhi-bei.md)** 的「面试准备篇」中有一篇文章专门整理了一些比较高质量的实战项目，包含业务项目、轮子项目、国外公开课 Lab 和视频类实战项目教程推荐，非常适合用来学习或者作为项目经验。
 
-![](https://oss.javaguide.cn/javamianshizhibei/project-experience-guide.png)
+![优质 Java 实战项目推荐](https://oss.javaguide.cn/javamianshizhibei/project-experience-guide.png)
 
 这篇文章一共推荐了 15+ 个实战项目，有业务类的，也有轮子类的，有开源项目、也有视频教程。对于参加校招的小伙伴，我更建议做一个业务类项目加上一个轮子类的项目。
 

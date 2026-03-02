@@ -1,18 +1,16 @@
 ---
 title: Java基础常见面试题总结(下)
+description: Java高级特性面试题总结：深入讲解异常处理机制、泛型原理、反射应用、注解使用、SPI机制、序列化、IO流模型(BIO/NIO/AIO)、语法糖等核心知识点。
 category: Java
 tag:
   - Java基础
 head:
   - - meta
     - name: keywords
-      content: Java异常,泛型,反射,IO,注解
-  - - meta
-    - name: description
-      content: 全网质量最高的Java基础常见知识点和面试题总结，希望对你有帮助！
+      content: Java异常,泛型,反射,注解,SPI,序列化,IO流,语法糖,try-with-resources,BIO NIO AIO,Java面试题
 ---
 
-<!-- @include: @article-header.snippet.md -->
+<!-- @include: @small-advertisement.snippet.md -->
 
 ## 异常
 
@@ -25,9 +23,14 @@ head:
 在 Java 中，所有的异常都有一个共同的祖先 `java.lang` 包中的 `Throwable` 类。`Throwable` 类有两个重要的子类:
 
 - **`Exception`** :程序本身可以处理的异常，可以通过 `catch` 来进行捕获。`Exception` 又可以分为 Checked Exception (受检查异常，必须处理) 和 Unchecked Exception (不受检查异常，可以不处理)。
-- **`Error`**：`Error` 属于程序无法处理的错误 ，~~我们没办法通过 `catch` 来进行捕获~~不建议通过`catch`捕获 。例如 Java 虚拟机运行错误（`Virtual MachineError`）、虚拟机内存不够错误(`OutOfMemoryError`)、类定义错误（`NoClassDefFoundError`）等 。这些异常发生时，Java 虚拟机（JVM）一般会选择线程终止。
+- **`Error`** ：`Error` 属于程序无法处理的错误 ，~~我们没办法通过 `catch` 来进行捕获~~不建议通过`catch`捕获 。例如 Java 虚拟机运行错误（`Virtual MachineError`）、虚拟机内存不够错误(`OutOfMemoryError`)、类定义错误（`NoClassDefFoundError`）等 。这些异常发生时，Java 虚拟机（JVM）一般会选择线程终止。
 
-### Checked Exception 和 Unchecked Exception 有什么区别？
+### ClassNotFoundException 和 NoClassDefFoundError 的区别
+
+- `ClassNotFoundException` 是Exception，发生在使用反射等动态加载时找不到类，是可预期的，可以捕获处理。
+- `NoClassDefFoundError` 是Error，是编译时存在的类，在运行时链接不到了（比如 jar 包缺失），是环境问题，导致 JVM 无法继续。
+
+### ⭐️Checked Exception 和 Unchecked Exception 有什么区别？
 
 **Checked Exception** 即 受检查异常 ，Java 代码在编译过程中，如果受检查异常没有被 `catch`或者`throws` 关键字处理的话，就没办法通过编译。
 
@@ -52,6 +55,14 @@ head:
 - ……
 
 ![](https://oss.javaguide.cn/github/javaguide/java/basis/unchecked-exception.png)
+
+### 你更倾向于使用 Checked Exception 还是 Unchecked Exception？
+
+默认使用 Unchecked Exception，只在必要时才用 Checked Exception。
+
+我们可以把 Unchecked Exception（比如 `NullPointerException`）看作是代码 Bug。对待 Bug，最好的方式是让它暴露出来然后去修复代码，而不是用 `try-catch` 去掩盖它。
+
+一般来说，只在一种情况下使用 Checked Exception：当这个异常是业务逻辑的一部分，并且调用方必须处理它时。比如说，一个余额不足异常。这不是 bug，而是一个正常的业务分支，我需要用 Checked Exception 来强制调用者去处理这种情况，比如提示用户去充值。这样就能在保证关键业务逻辑完整性的同时，让代码尽可能保持简洁。
 
 ### Throwable 类常用方法有哪些？
 
@@ -88,14 +99,6 @@ Finally
 ```
 
 **注意：不要在 finally 语句块中使用 return!** 当 try 语句和 finally 语句中都有 return 语句时，try 语句块中的 return 语句会被忽略。这是因为 try 语句中的 return 返回值会先被暂存在一个本地变量中，当执行到 finally 语句中的 return 之后，这个本地变量的值就变为了 finally 语句中的 return 返回值。
-
-[jvm 官方文档](https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.10.2.5)中有明确提到：
-
-> If the `try` clause executes a _return_, the compiled code does the following:
->
-> 1. Saves the return value (if any) in a local variable.
-> 2. Executes a _jsr_ to the code for the `finally` clause.
-> 3. Upon return from the `finally` clause, returns the value saved in the local variable.
 
 代码示例：
 
@@ -213,11 +216,11 @@ catch (IOException e) {
 }
 ```
 
-### 异常使用有哪些需要注意的地方？
+### ⭐️异常使用有哪些需要注意的地方？
 
 - 不要把异常定义为静态变量，因为这样会导致异常栈信息错乱。每次手动抛出异常，我们都需要手动 new 一个异常对象抛出。
 - 抛出的异常信息一定要有意义。
-- 建议抛出更加具体的异常比如字符串转换为数字格式错误的时候应该抛出`NumberFormatException`而不是其父类`IllegalArgumentException`。
+- 建议抛出更加具体的异常，比如字符串转换为数字格式错误的时候应该抛出`NumberFormatException`而不是其父类`IllegalArgumentException`。
 - 避免重复记录日志：如果在捕获异常的地方已经记录了足够的信息（包括异常类型、错误信息和堆栈跟踪等），那么在业务代码中再次抛出这个异常时，就不应该再次记录相同的错误信息。重复记录日志会使得日志文件膨胀，并且可能会掩盖问题的实际原因，使得问题更难以追踪和解决。
 - ……
 
@@ -325,56 +328,122 @@ printArray( stringArray  );
 - 构建集合工具类（参考 `Collections` 中的 `sort`, `binarySearch` 方法）。
 - ……
 
-## 反射
+## ⭐️反射
 
-关于反射的详细解读，请看这篇文章 [Java 反射机制详解](./reflection.md) 。
+关于反射的详细解读，请看这篇文章 [Java 反射机制详解](https://javaguide.cn/java/basis/reflection.html) 。
 
-### 何谓反射？
+### 什么是反射？
 
-如果说大家研究过框架的底层原理或者咱们自己写过框架的话，一定对反射这个概念不陌生。反射之所以被称为框架的灵魂，主要是因为它赋予了我们在运行时分析类以及执行类中方法的能力。通过反射你可以获取任意一个类的所有属性和方法，你还可以调用这些方法和属性。
+简单来说，Java 反射 (Reflection) 是一种**在程序运行时，动态地获取类的信息并操作类或对象（方法、属性）的能力**。
 
-### 反射的优缺点？
+通常情况下，我们写的代码在编译时类型就已经确定了，要调用哪个方法、访问哪个字段都是明确的。但反射允许我们在**运行时**才去探知一个类有哪些方法、哪些属性、它的构造函数是怎样的，甚至可以动态地创建对象、调用方法或修改属性，哪怕这些方法或属性是私有的。
 
-反射可以让我们的代码更加灵活、为各种框架提供开箱即用的功能提供了便利。
+正是这种在运行时“反观自身”并进行操作的能力，使得反射成为许多**通用框架和库的基石**。它让代码更加灵活，能够处理在编译时未知的类型。
 
-不过，反射让我们在运行时有了分析操作类的能力的同时，也增加了安全问题，比如可以无视泛型参数的安全检查（泛型参数的安全检查发生在编译时）。另外，反射的性能也要稍差点，不过，对于框架来说实际是影响不大的。
+### 反射有什么优缺点？
+
+**优点：**
+
+1. **灵活性和动态性**：反射允许程序在运行时动态地加载类、创建对象、调用方法和访问字段。这样可以根据实际需求（如配置文件、用户输入、注解等）动态地适应和扩展程序的行为，显著提高了系统的灵活性和适应性。
+2. **框架开发的基础**：许多现代 Java 框架（如 Spring、Hibernate、MyBatis）都大量使用反射来实现依赖注入（DI）、面向切面编程（AOP）、对象关系映射（ORM）、注解处理等核心功能。反射是实现这些“魔法”功能不可或缺的基础工具。
+3. **解耦合和通用性**：通过反射，可以编写更通用、可重用和高度解耦的代码，降低模块之间的依赖。例如，可以通过反射实现通用的对象拷贝、序列化、Bean 工具等。
+
+**缺点：**
+
+1. **性能开销**：反射操作通常比直接代码调用要慢。因为涉及到动态类型解析、方法查找以及 JIT 编译器的优化受限等因素。不过，对于大多数框架场景，这种性能损耗通常是可以接受的，或者框架本身会做一些缓存优化。
+2. **安全性问题**：反射可以绕过 Java 语言的访问控制机制（如访问 `private` 字段和方法），破坏了封装性，可能导致数据泄露或程序被恶意篡改。此外，还可以绕过泛型检查，带来类型安全隐患。
+3. **代码可读性和维护性**：过度使用反射会使代码变得复杂、难以理解和调试。错误通常在运行时才会暴露，不像编译期错误那样容易发现。
 
 相关阅读：[Java Reflection: Why is it so slow?](https://stackoverflow.com/questions/1392351/java-reflection-why-is-it-so-slow) 。
 
 ### 反射的应用场景？
 
-像咱们平时大部分时候都是在写业务代码，很少会接触到直接使用反射机制的场景。但是！这并不代表反射没有用。相反，正是因为反射，你才能这么轻松地使用各种框架。像 Spring/Spring Boot、MyBatis 等等框架中都大量使用了反射机制。
+我们平时写业务代码可能很少直接跟 Java 的反射（Reflection）打交道。但你可能没意识到，你天天都在享受反射带来的便利！**很多流行的框架，比如 Spring/Spring Boot、MyBatis 等，底层都大量运用了反射机制**，这才让它们能够那么灵活和强大。
 
-**这些框架中也大量使用了动态代理，而动态代理的实现也依赖反射。**
+下面简单列举几个最场景的场景帮助大家理解。
 
-比如下面是通过 JDK 实现动态代理的示例代码，其中就使用了反射类 `Method` 来调用指定的方法。
+**1.依赖注入与控制反转（IoC）**
+
+以 Spring/Spring Boot 为代表的 IoC 框架，会在启动时扫描带有特定注解（如 `@Component`, `@Service`, `@Repository`, `@Controller`）的类，利用反射实例化对象（Bean），并通过反射注入依赖（如 `@Autowired`、构造器注入等）。
+
+**2.注解处理**
+
+注解本身只是个“标记”，得有人去读这个标记才知道要做什么。反射就是那个“读取器”。框架通过反射检查类、方法、字段上有没有特定的注解，然后根据注解信息执行相应的逻辑。比如，看到 `@Value`，就用反射读取注解内容，去配置文件找对应的值，再用反射把值设置给字段。
+
+**3.动态代理与 AOP**
+
+想在调用某个方法前后自动加点料（比如打日志、开事务、做权限检查）？AOP（面向切面编程）就是干这个的，而动态代理是实现 AOP 的常用手段。JDK 自带的动态代理（Proxy 和 InvocationHandler）就离不开反射。代理对象在内部调用真实对象的方法时，就是通过反射的 `Method.invoke` 来完成的。
 
 ```java
 public class DebugInvocationHandler implements InvocationHandler {
-    /**
-     * 代理类中的真实对象
-     */
-    private final Object target;
+    private final Object target; // 真实对象
 
-    public DebugInvocationHandler(Object target) {
-        this.target = target;
-    }
+    public DebugInvocationHandler(Object target) { this.target = target; }
 
-    public Object invoke(Object proxy, Method method, Object[] args) throws InvocationTargetException, IllegalAccessException {
-        System.out.println("before method " + method.getName());
+    // proxy: 代理对象, method: 被调用的方法, args: 方法参数
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        System.out.println("切面逻辑：调用方法 " + method.getName() + " 之前");
+        // 通过反射调用真实对象的同名方法
         Object result = method.invoke(target, args);
-        System.out.println("after method " + method.getName());
+        System.out.println("切面逻辑：调用方法 " + method.getName() + " 之后");
         return result;
     }
 }
-
 ```
 
-另外，像 Java 中的一大利器 **注解** 的实现也用到了反射。
+**4.对象关系映射（ORM）**
 
-为什么你使用 Spring 的时候 ，一个`@Component`注解就声明了一个类为 Spring Bean 呢？为什么你通过一个 `@Value`注解就读取到配置文件中的值呢？究竟是怎么起作用的呢？
+像 MyBatis、Hibernate 这种框架，能帮你把数据库查出来的一行行数据，自动变成一个个 Java 对象。它是怎么知道数据库字段对应哪个 Java 属性的？还是靠反射。它通过反射获取 Java 类的属性列表，然后把查询结果按名字或配置对应起来，再用反射调用 setter 或直接修改字段值。反过来，保存对象到数据库时，也是用反射读取属性值来拼 SQL。
 
-这些都是因为你可以基于反射分析类，然后获取到类/属性/方法/方法的参数上的注解。你获取到注解之后，就可以做进一步的处理。
+## 代理
+
+关于 Java 代理的详细介绍，可以看看笔者写的 [Java 代理模式详解](https://javaguide.cn/java/basis/proxy.html "Java 代理模式详解")这篇文章。
+
+### 如何实现动态代理？
+
+动态代理是一种非常强大的设计模式，它允许我们在**不修改源代码**的情况下，对一个类或对象的方法进行**功能增强（Enhancement）**。
+
+在 Java 中，实现动态代理最主流的方式有两种：**JDK 动态代理** 和 **CGLIB 动态代理**。
+
+**第一种：JDK 动态代理**
+
+Java 官方提供的，其核心要求是目标类必须实现一个或多个接口。JDK 动态代理在运行时，会利用 `Proxy.newProxyInstance()` 方法，动态地创建一个实现了这些接口的代理类的实例。这个代理类在内存中生成，你看不到它的 `.java` 或 `.class` 文件。
+
+当你调用代理对象的任何一个方法时，这个调用都会被转发到我们提供的一个 `InvocationHandler` 接口的 `invoke` 方法中。在 `invoke` 方法里，我们就可以在调用原始方法（目标方法）之前或之后，加入我们自己的增强逻辑。
+
+**第二种：CGLIB 动态代理**
+
+CGLIB 是一个第三方的代码生成库。它的原理与 JDK 完全不同，它不要求被代理的类实现接口。它在运行时，动态生成目标类的子类作为代理类（通过 ASM 字节码操作技术）。然后，它会重写父类（也就是被代理类）中所有非 `final`、`private` 和 `static` 的方法。
+
+当你调用代理对象的任何一个方法时，这个调用会被 CGLIB 的 `MethodInterceptor` 接口的 `intercept` 方法拦截。和 `InvocationHandler` 的 `invoke` 方法一样，我们可以在 `intercept` 方法里，在调用原始的父类方法之前或之后，加入我们的增强逻辑。
+
+### 静态代理和动态代理有什么区别？
+
+静态代理和动态代理的核心差异在于 **代理关系的确定时机、实现灵活性及维护成本** 。
+
+| 对比维度         | 静态代理 (Static Proxy)                                                                  | 动态代理 (Dynamic Proxy)                                                       |
+| ---------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| 代理关系确定时机 | 编译期（编译后生成固定的 `.class` 字节码文件）                                           | 运行时（动态生成代理类字节码并加载到 JVM）                                     |
+| 实现方式         | 手动编写代理类，需与目标类实现同一接口，一对一绑定                                       | 无需手动编写代理类，通过 `Handler`/`Interceptor` 封装增强逻辑，一对多复用      |
+| 接口依赖         | 必须实现接口（代理类与目标类遵循同一接口规范）                                           | 支持代理接口或直接代理实现类                                                   |
+| 代码量与维护性   | 代码量大（目标类越多，代理类越多），维护成本高；接口新增方法时，目标类与代理类需同步修改 | 代码量极少（通用增强逻辑可复用），维护性好；与接口解耦，接口变更不影响代理逻辑 |
+| 核心优势         | 实现简单、逻辑直观，无额外框架依赖                                                       | 灵活性强、复用性高，降低重复编码，适配复杂场景                                 |
+| 典型应用场景     | 简单的装饰器模式、少量固定类的增强需求                                                   | Spring AOP、RPC 框架（如 Dubbo）、ORM 框架                                     |
+
+### ⭐️JDK 动态代理和 CGLIB 动态代理有什么区别？
+
+1. JDK 动态代理是官方的，它要求被代理的类必须实现接口。它的原理是动态生成一个接口的实现类来作为代理。CGLIB 是第三方的，它不需要接口。它的原理是动态生成一个被代理类的子类来作为代理。但也正因为是继承，所以它不能代理 `final` 的类，被代理的方法也不能是 `final` 或 `private` 。
+2. 就二者的效率来说，大部分情况都是 JDK 动态代理更优秀，随着 JDK 版本的升级，这个优势更加明显。
+
+### ⭐️介绍一下动态代理在框架中的实际应用场景
+
+动态代理最典型的应用场景就是**Spring AOP**。
+
+AOP(Aspect-Oriented Programming:面向切面编程)能够将那些与业务无关，却为业务模块所共同调用的逻辑或责任（例如事务处理、日志管理、权限控制等）封装起来，便于减少系统的重复代码，降低模块间的耦合度，并有利于未来的可拓展性和可维护性。
+
+Spring AOP 就是基于动态代理的，如果要代理的对象，实现了某个接口，那么 Spring AOP 会使用 **JDK Proxy**，去创建代理对象，而对于没有实现接口的对象，就无法使用 JDK Proxy 去进行代理了，这时候 Spring AOP 会使用 **Cglib** 生成一个被代理对象的子类来作为代理，如下图所示：
+
+![SpringAOPProcess](https://oss.javaguide.cn/github/javaguide/system-design/framework/spring/230ae587a322d6e4d09510161987d346.jpeg)
 
 ## 注解
 
@@ -405,9 +474,9 @@ JDK 提供了很多内置的注解（比如 `@Override`、`@Deprecated`），同
 - **编译期直接扫描**：编译器在编译 Java 代码的时候扫描对应的注解并处理，比如某个方法使用`@Override` 注解，编译器在编译的时候就会检测当前的方法是否重写了父类对应的方法。
 - **运行期通过反射处理**：像框架中自带的注解(比如 Spring 框架的 `@Value`、`@Component`)都是通过反射来进行处理的。
 
-## SPI
+## ⭐️SPI
 
-关于 SPI 的详细解读，请看这篇文章 [Java SPI 机制详解](./spi.md) 。
+关于 SPI 的详细解读，请看这篇文章 [Java SPI 机制详解](https://javaguide.cn/java/basis/spi.html) 。
 
 ### 何谓 SPI?
 
@@ -441,9 +510,9 @@ SPI 将服务接口和具体的服务实现分离开来，将服务调用方和�
 - 需要遍历加载所有的实现类，不能做到按需加载，这样效率还是相对较低的。
 - 当多个 `ServiceLoader` 同时 `load` 时，会有并发问题。
 
-## 序列化和反序列化
+## ⭐️序列化和反序列化
 
-关于序列化和反序列化的详细解读，请看这篇文章 [Java 序列化详解](./serialization.md) ，里面涉及到的知识点和面试题更全面。
+关于序列化和反序列化的详细解读，请看这篇文章 [Java 序列化详解](https://javaguide.cn/java/basis/serialization.html) ，里面涉及到的知识点和面试题更全面。
 
 ### 什么是序列化?什么是反序列化?
 
@@ -492,7 +561,7 @@ SPI 将服务接口和具体的服务实现分离开来，将服务调用方和�
 
 对于不想进行序列化的变量，使用 `transient` 关键字修饰。
 
-`transient` 关键字的作用是：阻止实例中那些用此关键字修饰的的变量序列化；当对象被反序列化时，被 `transient` 修饰的变量值不会被持久化和恢复。
+`transient` 关键字的作用是：阻止实例中那些用此关键字修饰的变量序列化；当对象被反序列化时，被 `transient` 修饰的变量值不会被持久化和恢复。
 
 关于 `transient` 还有几点注意：
 
@@ -518,9 +587,9 @@ JDK 自带的序列化方式一般不会用 ，因为序列化效率低并且存
 
 关于 I/O 的详细解读，请看下面这几篇文章，里面涉及到的知识点和面试题更全面。
 
-- [Java IO 基础知识总结](../io/io-basis.md)
-- [Java IO 设计模式总结](../io/io-design-patterns.md)
-- [Java IO 模型详解](../io/io-model.md)
+- [Java IO 基础知识总结](https://javaguide.cn/java/io/io-basis.html)
+- [Java IO 设计模式总结](https://javaguide.cn/java/io/io-design-patterns.html)
+- [Java IO 模型详解](https://javaguide.cn/java/io/io-model.html)
 
 ### Java IO 流了解吗？
 
@@ -542,11 +611,11 @@ Java IO 流的 40 多个类都是从如下 4 个抽象类基类中派生出来�
 
 ### Java IO 中的设计模式有哪些？
 
-参考答案：[Java IO 设计模式总结](../io/io-design-patterns.md)
+参考答案：[Java IO 设计模式总结](https://javaguide.cn/java/io/io-design-patterns.html)
 
-### BIO、NIO 和 AIO 的区别？
+### ⭐️BIO、NIO 和 AIO 的区别？
 
-参考答案：[Java IO 模型详解](../io/io-model.md)
+参考答案：[Java IO 模型详解](https://javaguide.cn/java/io/io-model.html)
 
 ## 语法糖
 

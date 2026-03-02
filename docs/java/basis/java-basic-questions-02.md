@@ -1,22 +1,20 @@
 ---
 title: Java基础常见面试题总结(中)
+description: Java面向对象编程核心知识点总结：涵盖封装继承多态三大特性、接口与抽象类区别、Object类方法详解、深拷贝浅拷贝、String/StringBuffer/StringBuilder对比等，帮助快速掌握Java OOP精髓。
 category: Java
 tag:
   - Java基础
 head:
   - - meta
     - name: keywords
-      content: 面向对象,构造方法,接口,抽象类,String,Object
-  - - meta
-    - name: description
-      content: 全网质量最高的Java基础常见知识点和面试题总结，希望对你有帮助！
+      content: 面向对象,封装继承多态,接口,抽象类,深拷贝浅拷贝,Object类,equals,hashCode,String,字符串常量池,Java面试题
 ---
 
 <!-- @include: @article-header.snippet.md -->
 
 ## 面向对象基础
 
-### 面向对象和面向过程的区别
+### ⭐️面向对象和面向过程的区别
 
 面向过程编程（Procedural-Oriented Programming，POP）和面向对象编程（Object-Oriented Programming，OOP）是两种常见的编程范式，两者的主要区别在于解决问题的方式不同：
 
@@ -97,14 +95,14 @@ public class Main {
 
 我们直接定义了圆的半径，并使用该半径直接计算出圆的面积和周长。
 
-### 创建一个对象用什么运算符?对象实体与对象引用有何不同?
+### 创建一个对象用什么运算符?对象实例与对象引用有何不同?
 
 new 运算符，new 创建对象实例（对象实例在堆内存中），对象引用指向对象实例（对象引用存放在栈内存中）。
 
 - 一个对象引用可以指向 0 个或 1 个对象（一根绳子可以不系气球，也可以系一个气球）；
 - 一个对象可以有 n 个引用指向它（可以用 n 条绳子系住一个气球）。
 
-### 对象的相等和引用相等的区别
+### ⭐️对象的相等和引用相等的区别
 
 - 对象的相等一般比较的是内存中存放的内容是否相等。
 - 引用相等一般比较的是他们指向的内存地址是否相等。
@@ -156,7 +154,7 @@ true
 
 构造方法**不能被重写（override）**，但**可以被重载（overload）**。因此，一个类中可以有多个构造方法，这些构造方法可以具有不同的参数列表，以提供不同的对象初始化方式。
 
-### 面向对象三大特征
+### ⭐️面向对象三大特征
 
 #### 封装
 
@@ -210,7 +208,40 @@ public class Student {
 - 多态不能调用“只在子类存在但在父类不存在”的方法；
 - 如果子类重写了父类的方法，真正执行的是子类重写的方法，如果子类没有重写父类的方法，执行的是父类的方法。
 
-### 接口和抽象类有什么共同点和区别？
+```mermaid
+flowchart LR
+    subgraph OOP["面向对象三大特征"]
+        style OOP fill:#F0F2F5,stroke:#E0E6ED,stroke-width:1.5px
+
+        subgraph Encapsulation["封装 Encapsulation"]
+            style Encapsulation fill:#F5F7FA,stroke:#E0E6ED,stroke-width:1.5px
+            E1["隐藏内部状态"]:::core
+            E2["提供公共方法"]:::core
+            E3["保护数据安全"]:::core
+        end
+
+        subgraph Inheritance["继承 Inheritance"]
+            style Inheritance fill:#F5F7FA,stroke:#E0E6ED,stroke-width:1.5px
+            I1["代码复用"]:::core
+            I2["扩展功能"]:::core
+            I3["单继承限制"]:::highlight
+        end
+
+        subgraph Polymorphism["多态 Polymorphism"]
+            style Polymorphism fill:#F5F7FA,stroke:#E0E6ED,stroke-width:1.5px
+            P1["父类引用指向子类"]:::core
+            P2["运行时动态绑定"]:::core
+            P3["方法重写实现"]:::core
+        end
+    end
+
+    classDef core fill:#4CA497,color:#fff,rx:10,ry:10
+    classDef highlight fill:#E99151,color:#fff,rx:10,ry:10
+
+    linkStyle default stroke-width:1.5px,opacity:0.8
+```
+
+### ⭐️接口和抽象类有什么共同点和区别？
 
 #### 接口和抽象类的共同点
 
@@ -275,6 +306,18 @@ public interface MyInterface {
 ```
 
 ### 深拷贝和浅拷贝区别了解吗？什么是引用拷贝？
+
+```mermaid
+flowchart LR
+    Copy["对象拷贝"] --> RefCopy["引用拷贝<br/>两个引用指向同一对象"]
+    Copy --> ShallowCopy["浅拷贝<br/>复制基本类型，共享引用类型"]
+    Copy --> DeepCopy["深拷贝<br/>递归复制所有属性"]
+
+    classDef main fill:#005D7B,color:#fff,rx:10,ry:10
+    class Copy main
+
+    linkStyle default stroke-width:1.5px,opacity:0.8
+```
 
 关于深拷贝和浅拷贝区别，我这里先给结论：
 
@@ -359,11 +402,11 @@ System.out.println(person1.getAddress() == person1Copy.getAddress());
 
 **那什么是引用拷贝呢？** 简单来说，引用拷贝就是两个不同的引用指向同一个对象。
 
-我专门画了一张图来描述浅拷贝、深拷贝、引用拷贝：
+我专门画了一张图来描述浅拷贝、深拷贝和引用拷贝：
 
-![shallow&deep-copy](https://oss.javaguide.cn/github/javaguide/java/basis/shallow&deep-copy.png)
+![图解浅拷贝、深拷贝和引用拷贝](https://oss.javaguide.cn/github/javaguide/java/basis/shallow&deep-copy.png)
 
-## Object
+## ⭐️Object
 
 ### Object 类的常见方法有哪些？
 
@@ -455,7 +498,7 @@ System.out.println(42 == 42.0);// true
 
 `String` 中的 `equals` 方法是被重写过的，因为 `Object` 的 `equals` 方法是比较的对象的内存地址，而 `String` 的 `equals` 方法比较的是对象的值。
 
-当创建 `String` 类型的对象时，虚拟机会在常量池中查找有没有已经存在的值和要创建的值相同的对象，如果有就把它赋给当前引用。如果没有就在常量池中重新创建一个 `String` 对象。
+当使用字符串字面量创建 `String` 类型的对象（如`String aa = "ab"`）时，虚拟机会在常量池中查找有没有已经存在的值和要创建的值相同的对象，如果有就把它赋给当前引用；如果没有，就在常量池中创建一个 `String` 对象并赋给当前引用。但当使用`new`关键字创建对象（如`String a = new String("ab")`）时，虚拟机总是会在堆内存中**创建一个新的对象**并使用常量池中的值（如果没有，会先在字符串常量池中创建字符串对象 "ab"）进行初始化，然后赋给当前引用。
 
 `String`类`equals()`方法：
 
@@ -504,13 +547,18 @@ public native int hashCode();
 
 ### 为什么要有 hashCode？
 
-我们以“`HashSet` 如何检查重复”为例子来说明为什么要有 `hashCode`？
+我们以“HashSet 如何检查重复”为例子来说明为什么要有 hashCode？
 
-下面这段内容摘自我的 Java 启蒙书《Head First Java》:
+当我们把对象加入 HashSet 时，HashSet 会先调用对象的 `hashCode()` 方法，得到一个“哈希值”，并通过内部散列函数对这个哈希值再做一次简单的转换（比如取余），决定这条数据应该放进底层数组的哪一个桶（bucket，对应到底层数组的某个位置）：
 
-> 当你把对象加入 `HashSet` 时，`HashSet` 会先计算对象的 `hashCode` 值来判断对象加入的位置，同时也会与其他已经加入的对象的 `hashCode` 值作比较，如果没有相符的 `hashCode`，`HashSet` 会假设对象没有重复出现。但是如果发现有相同 `hashCode` 值的对象，这时会调用 `equals()` 方法来检查 `hashCode` 相等的对象是否真的相同。如果两者相同，`HashSet` 就不会让其加入操作成功。如果不同的话，就会重新散列到其他位置。这样我们就大大减少了 `equals` 的次数，相应就大大提高了执行速度。
+1. 如果该桶当前是空的，就直接将对象对应的节点插入到这个桶中。
+2. 如果该桶中已经有其他元素，HashSet 会在这个桶对应的链表或红黑树中逐个比较：
+   - 对于**哈希值不同**的节点，直接跳过；
+   - 对于**哈希值相同**的节点，则会进一步调用 equals() 方法来检查这两个对象是否“相等”：
+     – 如果 `equals()` 返回 true，说明集合中已经存在与当前对象等价的元素，`HashSet` 就不会再次加入它；
+     – 如果返回 false， 则认为是新元素，会将该对象作为一个新节点加入到**同一个桶**的链表或红黑树中。
 
-其实， `hashCode()` 和 `equals()`都是用于比较两个对象是否相等。
+通过先利用 `hashCode()` 将候选范围缩小到同一个桶内，再在桶内少量元素上调用 `equals()` 做精确判断，`HashSet` 大大减少了 `equals()` 的调用次数，从而提高了查找和插入的执行效率。
 
 **那为什么 JDK 还要同时提供这两个方法呢？**
 
@@ -524,7 +572,7 @@ public native int hashCode();
 
 **那为什么两个对象有相同的 `hashCode` 值，它们也不一定是相等的？**
 
-因为 `hashCode()` 所使用的哈希算法也许刚好会让多个对象传回相同的哈希值。越糟糕的哈希算法越容易碰撞，但这也与数据值域分布的特性有关（所谓哈希碰撞也就是指的是不同的对象得到相同的 `hashCode` )。
+因为 `hashCode()` 所使用的哈希算法也许刚好会让多个对象传回相同的哈希值。越糟糕的哈希算法越容易碰撞，但这也与数据值域分布的特性有关（所谓哈希碰撞就是指不同的对象得到相同的 `hashCode` )。
 
 总结下来就是：
 
@@ -551,7 +599,7 @@ public native int hashCode();
 
 ## String
 
-### String、StringBuffer、StringBuilder 的区别？
+### ⭐️String、StringBuffer、StringBuilder 的区别？
 
 **可变性**
 
@@ -579,6 +627,8 @@ abstract class AbstractStringBuilder implements Appendable, CharSequence {
 
 `String` 中的对象是不可变的，也就可以理解为常量，线程安全。`AbstractStringBuilder` 是 `StringBuilder` 与 `StringBuffer` 的公共父类，定义了一些字符串的基本操作，如 `expandCapacity`、`append`、`insert`、`indexOf` 等公共方法。`StringBuffer` 对方法加了同步锁或者对调用的方法加了同步锁，所以是线程安全的。`StringBuilder` 并没有对方法进行加同步锁，所以是非线程安全的。
 
+<img src="https://oss.javaguide.cn/github/javaguide/java/basis/stringbuffer-methods.png" style="zoom:50%;" />
+
 **性能**
 
 每次对 `String` 类型进行改变的时候，都会生成一个新的 `String` 对象，然后将指针指向新的 `String` 对象。`StringBuffer` 每次都会对 `StringBuffer` 对象本身进行操作，而不是生成新的对象并改变对象引用。相同情况下使用 `StringBuilder` 相比使用 `StringBuffer` 仅能获得 10%~15% 左右的性能提升，但却要冒多线程不安全的风险。
@@ -589,7 +639,7 @@ abstract class AbstractStringBuilder implements Appendable, CharSequence {
 - 单线程操作字符串缓冲区下操作大量数据: 适用 `StringBuilder`
 - 多线程操作字符串缓冲区下操作大量数据: 适用 `StringBuffer`
 
-### String 为什么是不可变的?
+### ⭐️String 为什么是不可变的?
 
 `String` 类中使用 `final` 关键字修饰字符数组来保存字符串，~~所以`String` 对象是不可变的。~~
 
@@ -636,7 +686,7 @@ public final class String implements java.io.Serializable, Comparable<String>, C
 >
 > 这是官方的介绍：<https://openjdk.java.net/jeps/254> 。
 
-### 字符串拼接用“+” 还是 StringBuilder?
+### ⭐️字符串拼接用“+” 还是 StringBuilder?
 
 Java 语言本身并不支持运算符重载，“+”和“+=”是专门为 String 类重载过的运算符，也是 Java 中仅有的两个重载过的运算符。
 
@@ -689,27 +739,29 @@ System.out.println(s);
 
 `String` 中的 `equals` 方法是被重写过的，比较的是 String 字符串的值是否相等。 `Object` 的 `equals` 方法是比较的对象的内存地址。
 
-### 字符串常量池的作用了解吗？
+### ⭐️字符串常量池的作用了解吗？
 
 **字符串常量池** 是 JVM 为了提升性能和减少内存消耗针对字符串（String 类）专门开辟的一块区域，主要目的是为了避免字符串的重复创建。
 
 ```java
-// 在字符串常量池中创建字符串对象 ”ab“
-// 将字符串对象 ”ab“ 的引用赋值给 aa
+// 1.在字符串常量池中查询字符串对象 "ab"，如果没有则创建"ab"并放入字符串常量池
+// 2.将字符串对象 "ab" 的引用赋值给 aa
 String aa = "ab";
-// 直接返回字符串常量池中字符串对象 ”ab“，赋值给引用 bb
+// 直接返回字符串常量池中字符串对象 "ab"，赋值给引用 bb
 String bb = "ab";
 System.out.println(aa==bb); // true
 ```
 
 更多关于字符串常量池的介绍可以看一下 [Java 内存区域详解](https://javaguide.cn/java/jvm/memory-area.html) 这篇文章。
 
-### String s1 = new String("abc");这句话创建了几个字符串对象？
+### ⭐️String s1 = new String("abc");这句话创建了几个字符串对象？
 
 先说答案：会创建 1 或 2 个字符串对象。
 
 1. 字符串常量池中不存在 "abc"：会创建 2 个 字符串对象。一个在字符串常量池中，由 `ldc` 指令触发创建。一个在堆中，由 `new String()` 创建，并使用常量池中的 "abc" 进行初始化。
 2. 字符串常量池中已存在 "abc"：会创建 1 个 字符串对象。该对象在堆中，由 `new String()` 创建，并使用常量池中的 "abc" 进行初始化。
+
+下面开始详细分析。
 
 下面开始详细分析。
 

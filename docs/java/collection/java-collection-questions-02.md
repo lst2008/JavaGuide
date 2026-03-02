@@ -1,22 +1,20 @@
 ---
 title: Java集合常见面试题总结(下)
+description: Java集合高频面试题：深入分析HashMap底层原理、红黑树转换、哈希冲突解决、ConcurrentHashMap线程安全机制、与Hashtable区别等核心知识点。
 category: Java
 tag:
   - Java集合
 head:
   - - meta
     - name: keywords
-      content: HashMap,ConcurrentHashMap,Hashtable,List,Set
-  - - meta
-    - name: description
-      content: Java集合常见知识点和面试题总结，希望对你有帮助！
+      content: HashMap,ConcurrentHashMap,Hashtable,红黑树,哈希冲突,线程安全,集合面试题
 ---
 
 <!-- @include: @article-header.snippet.md -->
 
 ## Map（重要）
 
-### HashMap 和 Hashtable 的区别
+### ⭐️HashMap 和 Hashtable 的区别
 
 - **线程是否安全：** `HashMap` 是非线程安全的，`Hashtable` 是线程安全的,因为 `Hashtable` 内部的方法基本都经过`synchronized` 修饰。（如果你要保证线程安全的话就使用 `ConcurrentHashMap` 吧！）；
 - **效率：** 因为线程安全的问题，`HashMap` 要比 `Hashtable` 效率高一点。另外，`Hashtable` 基本被淘汰，不要在代码中使用它；
@@ -73,7 +71,7 @@ static final int tableSizeFor(int cap) {
 |     调用 `put()`向 map 中添加元素      |                                           调用 `add()`方法向 `Set` 中添加元素                                            |
 | `HashMap` 使用键（Key）计算 `hashcode` | `HashSet` 使用成员对象来计算 `hashcode` 值，对于两个对象来说 `hashcode` 可能相同，所以`equals()`方法用来判断对象的相等性 |
 
-### HashMap 和 TreeMap 区别
+### ⭐️HashMap 和 TreeMap 区别
 
 `TreeMap` 和`HashMap` 都继承自`AbstractMap` ，但是需要注意的是`TreeMap`它还实现了`NavigableMap`接口和`SortedMap` 接口。
 
@@ -179,7 +177,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 
 也就是说，在 JDK1.8 中，实际上无论`HashSet`中是否已经存在了某元素，`HashSet`都会直接插入，只是会在`add()`方法的返回值处告诉我们插入前是否存在相同元素。
 
-### HashMap 的底层实现
+### ⭐️HashMap 的底层实现
 
 #### JDK1.8 之前
 
@@ -297,7 +295,7 @@ final void treeifyBin(Node<K,V>[] tab, int hash) {
 
 将链表转换成红黑树前会判断，如果当前数组的长度小于 64，那么会选择先进行数组扩容，而不是转换为红黑树。
 
-### HashMap 的长度为什么是 2 的幂次方
+### ⭐️HashMap 的长度为什么是 2 的幂次方
 
 为了让 `HashMap` 存取高效并减少碰撞，我们需要确保数据尽量均匀分布。哈希值在 Java 中通常使用 `int` 表示，其范围是 `-2147483648 ~ 2147483647`前后加起来大概 40 亿的映射空间，只要哈希函数映射得比较均匀松散，一般应用是很难出现碰撞的。但是，问题是一个 40 亿长度的数组，内存是放不下的。所以，这个散列值是不能直接拿来用的。用之前还要先做对数组的长度取模运算，得到的余数才能用来要存放的位置也就是对应的数组下标。
 
@@ -349,7 +347,7 @@ index       = 00001100  (12)
 2. 可以更好地保证哈希值的均匀分布：扩容之后，在旧数组元素 hash 值比较均匀的情况下，新数组元素也会被分配的比较均匀，最好的情况是会有一半在新数组的前半部分，一半在新数组后半部分。
 3. 扩容机制变得简单和高效：扩容后只需检查哈希值高位的变化来决定元素的新位置，要么位置不变（高位为 0），要么就是移动到新位置（高位为 1，原索引位置+原容量）。
 
-### HashMap 多线程操作导致死循环问题
+### ⭐️HashMap 多线程操作导致死循环问题
 
 JDK1.7 及之前版本的 `HashMap` 在多线程环境下扩容操作可能存在死循环问题，这是由于当一个桶位中有多个元素需要进行扩容时，多个线程同时对链表进行操作，头插法可能会导致链表中的节点指向错误的位置，从而形成一个环形链表，进而使得查询元素的操作陷入死循环无法结束。
 
@@ -357,9 +355,12 @@ JDK1.7 及之前版本的 `HashMap` 在多线程环境下扩容操作可能存�
 
 一般面试中这样介绍就差不多，不需要记各种细节，个人觉得也没必要记。如果想要详细了解 `HashMap` 扩容导致死循环问题，可以看看耗子叔的这篇文章：[Java HashMap 的死循环](https://coolshell.cn/articles/9606.html)。
 
-### HashMap 为什么线程不安全？
+### ⭐️HashMap 为什么线程不安全？
 
-JDK1.7 及之前版本，在多线程环境下，`HashMap` 扩容时会造成死循环和数据丢失的问题。
+`HashMap` 不是线程安全的。在多线程环境下对 `HashMap` 进行并发写操作，可能会导致两种主要问题：
+
+1. **数据丢失**：并发 `put` 操作可能导致一个线程的写入被另一个线程覆盖。
+2. **无限循环**：在 JDK 7 及以前的版本中，并发扩容时，由于头插法可能导致链表形成环，从而在 `get` 操作时引发无限循环，CPU 飙升至 100%。
 
 数据丢失这个在 JDK1.7 和 JDK 1.8 中都存在，这里以 JDK 1.8 为例进行介绍。
 
@@ -441,11 +442,11 @@ Test.lambda             avgt    5  1551065180.000 ± 19164407.426  ns/op
 Test.parallelStream     avgt    5   186345456.667 ±  3210435.590  ns/op
 ```
 
-### ConcurrentHashMap 和 Hashtable 的区别
+### ⭐️ConcurrentHashMap 和 Hashtable 的区别
 
 `ConcurrentHashMap` 和 `Hashtable` 的区别主要体现在实现线程安全的方式上不同。
 
-- **底层数据结构：** JDK1.7 的 `ConcurrentHashMap` 底层采用 **分段的数组+链表** 实现，JDK1.8 采用的数据结构跟 `HashMap1.8` 的结构一样，数组+链表/红黑二叉树。`Hashtable` 和 JDK1.8 之前的 `HashMap` 的底层数据结构类似都是采用 **数组+链表** 的形式，数组是 HashMap 的主体，链表则是主要为了解决哈希冲突而存在的；
+- **底层数据结构：** JDK1.7 的 `ConcurrentHashMap` 底层采用 **分段的数组+链表** 实现，在 JDK1.8 中采用的数据结构跟 `HashMap` 的结构一样，数组+链表/红黑二叉树。`Hashtable` 和 JDK1.8 之前的 `HashMap` 的底层数据结构类似都是采用 **数组+链表** 的形式，数组是 HashMap 的主体，链表则是主要为了解决哈希冲突而存在的；
 - **实现线程安全的方式（重要）：**
   - 在 JDK1.7 的时候，`ConcurrentHashMap` 对整个桶数组进行了分割分段(`Segment`，分段锁)，每一把锁只锁容器其中一部分数据（下面有示意图），多线程访问容器里不同数据段的数据，就不会存在锁竞争，提高并发访问率。
   - 到了 JDK1.8 的时候，`ConcurrentHashMap` 已经摒弃了 `Segment` 的概念，而是直接用 `Node` 数组+链表+红黑树的数据结构来实现，并发控制使用 `synchronized` 和 CAS 来操作。（JDK1.6 以后 `synchronized` 锁做了很多优化） 整个看起来就像是优化过且线程安全的 `HashMap`，虽然在 JDK1.8 中还能看到 `Segment` 的数据结构，但是已经简化了属性，只是为了兼容旧版本；
@@ -489,7 +490,7 @@ static final class TreeBin<K,V> extends Node<K,V> {
 }
 ```
 
-### ConcurrentHashMap 线程安全的具体实现方式/底层具体实现
+### ⭐️ConcurrentHashMap 线程安全的具体实现方式/底层具体实现
 
 #### JDK1.8 之前
 
@@ -520,7 +521,7 @@ Java 8 几乎完全重写了 `ConcurrentHashMap`，代码量从原来 Java 7 中
 
 Java 8 中，锁粒度更细，`synchronized` 只锁定当前链表或红黑二叉树的首节点，这样只要 hash 不冲突，就不会产生并发，就不会影响其他 Node 的读写，效率大幅提升。
 
-### JDK 1.7 和 JDK 1.8 的 ConcurrentHashMap 实现有什么不同？
+### ⭐️JDK 1.7 和 JDK 1.8 的 ConcurrentHashMap 实现有什么不同？
 
 - **线程安全实现方式**：JDK 1.7 采用 `Segment` 分段锁来保证安全， `Segment` 是继承自 `ReentrantLock`。JDK1.8 放弃了 `Segment` 分段锁的设计，采用 `Node + CAS + synchronized` 保证线程安全，锁粒度更细，`synchronized` 只锁定当前链表或红黑二叉树的首节点。
 - **Hash 碰撞解决方法** : JDK 1.7 采用拉链法，JDK1.8 采用拉链法结合红黑树（链表长度超过一定阈值时，将链表转换为红黑树）。
@@ -557,7 +558,7 @@ public static final Object NULL = new Object();
 
 翻译过来之后的，大致意思还是单线程下可以容忍歧义，而多线程下无法容忍。
 
-### ConcurrentHashMap 能保证复合操作的原子性吗？
+### ⭐️ConcurrentHashMap 能保证复合操作的原子性吗？
 
 `ConcurrentHashMap` 是线程安全的，意味着它可以保证多个线程同时对它进行读写操作时，不会出现数据不一致的情况，也不会导致 JDK1.7 及之前版本的 `HashMap` 多线程操作导致死循环问题。但是，这并不意味着它可以保证所有的复合操作都是原子性的，一定不要搞混了！
 

@@ -1,8 +1,13 @@
 ---
 title: Java 线程池详解
+description: Java线程池详解：深入讲解ThreadPoolExecutor核心参数配置、Executor框架体系、任务队列选择、拒绝策略、线程池工作原理及最佳实践。
 category: Java
 tag:
   - Java并发
+head:
+  - - meta
+    - name: keywords
+      content: Java线程池,ThreadPoolExecutor,Executor框架,线程池参数,拒绝策略,任务队列,线程池原理
 ---
 
 <!-- markdownlint-disable MD024 -->
@@ -13,15 +18,13 @@ tag:
 
 ## 线程池介绍
 
-顾名思义，线程池就是管理一系列线程的资源池，其提供了一种限制和管理线程资源的方式。每个线程池还维护一些基本统计信息，例如已完成任务的数量。
+池化技术想必大家已经屡见不鲜了，线程池、数据库连接池、HTTP 连接池等等都是对这个思想的应用。池化技术的思想主要是为了减少每次获取资源的消耗，提高对资源的利用率。
 
-这里借用《Java 并发编程的艺术》书中的部分内容来总结一下使用线程池的好处：
+线程池提供了一种限制和管理资源（包括执行一个任务）的方式。 每个线程池还维护一些基本统计信息，例如已完成任务的数量。使用线程池主要带来以下几个好处：
 
-- **降低资源消耗**。通过重复利用已创建的线程降低线程创建和销毁造成的消耗。
-- **提高响应速度**。当任务到达时，任务可以不需要等到线程创建就能立即执行。
-- **提高线程的可管理性**。线程是稀缺资源，如果无限制的创建，不仅会消耗系统资源，还会降低系统的稳定性，使用线程池可以进行统一的分配，调优和监控。
-
-**线程池一般用于执行多个不相关联的耗时任务，没有多线程的情况下，任务顺序执行，使用了线程池的话可让多个不相关联的任务同时执行。**
+1. **降低资源消耗**：线程池里的线程是可以重复利用的。一旦线程完成了某个任务，它不会立即销毁，而是回到池子里等待下一个任务。这就避免了频繁创建和销毁线程带来的开销。
+2. **提高响应速度**：因为线程池里通常会维护一定数量的核心线程（或者说“常驻工人”），任务来了之后，可以直接交给这些已经存在的、空闲的线程去执行，省去了创建线程的时间，任务能够更快地得到处理。
+3. **提高线程的可管理性**：线程池允许我们统一管理池中的线程。我们可以配置线程池的大小（核心线程数、最大线程数）、任务队列的类型和大小、拒绝策略等。这样就能控制并发线程的总量，防止资源耗尽，保证系统的稳定性。同时，线程池通常也提供了监控接口，方便我们了解线程池的运行状态（比如有多少活跃线程、多少任务在排队等），便于调优。
 
 ## Executor 框架介绍
 
@@ -162,11 +165,15 @@ public static class CallerRunsPolicy implements RejectedExecutionHandler {
 
 ### 线程池创建的两种方式
 
-**方式一：通过`ThreadPoolExecutor`构造函数来创建（推荐）。**
+在 Java 中，创建线程池主要有两种方式：
 
-![通过构造方法实现](./images/java-thread-pool-summary/threadpoolexecutor构造函数.png)
+**方式一：通过 `ThreadPoolExecutor` 构造函数直接创建 (推荐)**
 
-**方式二：通过 `Executor` 框架的工具类 `Executors` 来创建。**
+![](https://oss.javaguide.cn/github/javaguide/java/concurrent/threadpoolexecutor-construtors.png)
+
+这是最推荐的方式，因为它允许开发者明确指定线程池的核心参数，对线程池的运行行为有更精细的控制，从而避免资源耗尽的风险。
+
+**方式二：通过 `Executors` 工具类创建 (不推荐用于生产环境)**
 
 `Executors`工具类提供的创建线程池的方法如下图所示：
 
@@ -183,21 +190,19 @@ public static class CallerRunsPolicy implements RejectedExecutionHandler {
 
 `Executors` 返回线程池对象的弊端如下(后文会详细介绍到)：
 
-- `FixedThreadPool` 和 `SingleThreadExecutor`:使用的是无界的 `LinkedBlockingQueue`，任务队列最大长度为 `Integer.MAX_VALUE`,可能堆积大量的请求，从而导致 OOM。
+- `FixedThreadPool` 和 `SingleThreadExecutor`:使用的是阻塞队列 `LinkedBlockingQueue`，任务队列最大长度为 `Integer.MAX_VALUE`，可以看作是无界的，可能堆积大量的请求，从而导致 OOM。
 - `CachedThreadPool`:使用的是同步队列 `SynchronousQueue`, 允许创建的线程数量为 `Integer.MAX_VALUE` ，如果任务数量过多且执行速度较慢，可能会创建大量的线程，从而导致 OOM。
 - `ScheduledThreadPool` 和 `SingleThreadScheduledExecutor`:使用的无界的延迟阻塞队列`DelayedWorkQueue`，任务队列最大长度为 `Integer.MAX_VALUE`,可能堆积大量的请求，从而导致 OOM。
 
 ```java
-// 无界队列 LinkedBlockingQueue
 public static ExecutorService newFixedThreadPool(int nThreads) {
-
+    // LinkedBlockingQueue 的默认长度为 Integer.MAX_VALUE，可以看作是无界的
     return new ThreadPoolExecutor(nThreads, nThreads,0L, TimeUnit.MILLISECONDS,new LinkedBlockingQueue<Runnable>());
 
 }
 
-// 无界队列 LinkedBlockingQueue
 public static ExecutorService newSingleThreadExecutor() {
-
+    // LinkedBlockingQueue 的默认长度为 Integer.MAX_VALUE，可以看作是无界的
     return new FinalizableDelegatedExecutorService (new ThreadPoolExecutor(1, 1,0L, TimeUnit.MILLISECONDS,new LinkedBlockingQueue<Runnable>()));
 
 }
@@ -524,7 +529,7 @@ Finished all threads  // 任务全部执行完了才会跳出来，因为executo
     }
 ```
 
-更多关于线程池源码分析的内容推荐这篇文章：硬核干货：[4W 字从源码上分析 JUC 线程池 ThreadPoolExecutor 的实现原理](https://www.throwx.cn/2020/08/23/java-concurrency-thread-pool-executor/)
+更多关于线程池源码分析的内容推荐这篇文章：硬核干货：[4W 字从源码上分析 JUC 线程池 ThreadPoolExecutor 的实现原理](https://www.cnblogs.com/throwable/p/13574306.html)。
 
 现在，让我们在回到示例代码， 现在应该是不是很容易就可以搞懂它的原理了呢？
 
@@ -764,7 +769,7 @@ Exception in thread "main" java.util.concurrent.TimeoutException
     }
 ```
 
-`CachedThreadPool` 的`corePoolSize` 被设置为空（0），`maximumPoolSize`被设置为 `Integer.MAX.VALUE`，即它是无界的，这也就意味着如果主线程提交任务的速度高于 `maximumPool` 中线程处理任务的速度时，`CachedThreadPool` 会不断创建新的线程。极端情况下，这样会导致耗尽 cpu 和内存资源。
+`CachedThreadPool` 的`corePoolSize` 被设置为空（0），`maximumPoolSize`被设置为 `Integer.MAX_VALUE`，即它是无界的，这也就意味着如果主线程提交任务的速度高于 `maximumPool` 中线程处理任务的速度时，`CachedThreadPool` 会不断创建新的线程。极端情况下，这样会导致耗尽 cpu 和内存资源。
 
 #### 执行任务过程介绍
 

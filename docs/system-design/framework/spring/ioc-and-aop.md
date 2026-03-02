@@ -1,8 +1,13 @@
 ---
 title: IoC & AOP详解（快速搞懂）
+description: Spring IoC与AOP核心原理详解，深入讲解控制反转、依赖注入、切面编程及动态代理的实现机制。
 category: 框架
 tag:
   - Spring
+head:
+  - - meta
+    - name: keywords
+      content: IoC,DI,AOP,Spring IoC容器,依赖注入,切面编程,动态代理,Spring原理
 ---
 
 这篇文章会从下面从以下几个问题展开对 IoC & AOP 的解释
@@ -114,7 +119,7 @@ AOP 可以将横切关注点（如日志记录、事务管理、权限控制、�
 
 ![](https://oss.javaguide.cn/github/javaguide/system-design/framework/spring/crosscut-logic-and-businesslogic-separation%20%20%20%20%20%20.png)
 
-以日志记录为例进行介绍，假如我们需要对某些方法进行统一格式的日志记录，没有使用 AOP 技术之前，我们需要挨个写日志记录的逻辑代码，全是重复的的逻辑。
+以日志记录为例进行介绍，假如我们需要对某些方法进行统一格式的日志记录，没有使用 AOP 技术之前，我们需要挨个写日志记录的逻辑代码，全是重复的逻辑。
 
 ```java
 public CommonResponse<Object> method1() {
@@ -210,14 +215,80 @@ public CommonResponse<Object> method1() {
 
 AOP 的常见实现方式有动态代理、字节码操作等方式。
 
-Spring AOP 就是基于动态代理的，如果要代理的对象，实现了某个接口，那么 Spring AOP 会使用 **JDK Proxy**，去创建代理对象，而对于没有实现接口的对象，就无法使用 JDK Proxy 去进行代理了，这时候 Spring AOP 会使用 **Cglib** 生成一个被代理对象的子类来作为代理，如下图所示：
+Spring AOP 就是基于动态代理的，如果要代理的对象，实现了某个接口，那么 Spring AOP 会使用 **JDK Proxy**，去创建代理对象，而对于没有实现接口的对象，就无法使用 JDK Proxy 去进行代理了，这时候 Spring AOP 会使用 CGLIB 生成一个被代理对象的子类来作为代理，如下图所示：
 
 ![SpringAOPProcess](https://oss.javaguide.cn/github/javaguide/system-design/framework/spring/230ae587a322d6e4d09510161987d346.jpeg)
+
+**Spring Boot 和 Spring 的动态代理的策略是不是也是一样的呢？**其实不一样，很多人都理解错了。
+
+Spring Boot 2.0 之前，默认使用 **JDK 动态代理**。如果目标类没有实现接口，会抛出异常，开发者必须显式配置（`spring.aop.proxy-target-class=true`）使用 **CGLIB 动态代理** 或者注入接口来解决。Spring Boot 1.5.x 自动配置 AOP 代码如下：
+
+```java
+@Configuration
+@ConditionalOnClass({ EnableAspectJAutoProxy.class, Aspect.class, Advice.class })
+@ConditionalOnProperty(prefix = "spring.aop", name = "auto", havingValue = "true", matchIfMissing = true)
+public class AopAutoConfiguration {
+
+	@Configuration
+	@EnableAspectJAutoProxy(proxyTargetClass = false)
+ // 该配置类只有在 spring.aop.proxy-target-class=false 或未显式配置时才会生效。
+ // 也就是说，如果开发者未明确选择代理方式，Spring 会默认加载 JDK 动态代理。
+	@ConditionalOnProperty(prefix = "spring.aop", name = "proxy-target-class", havingValue = "false", matchIfMissing = true)
+	public static class JdkDynamicAutoProxyConfiguration {
+
+	}
+
+	@Configuration
+	@EnableAspectJAutoProxy(proxyTargetClass = true)
+ // 该配置类只有在 spring.aop.proxy-target-class=true 时才会生效。
+ // 即开发者通过属性配置明确指定使用 CGLIB 动态代理时，Spring 会加载这个配置类。
+	@ConditionalOnProperty(prefix = "spring.aop", name = "proxy-target-class", havingValue = "true", matchIfMissing = false)
+	public static class CglibAutoProxyConfiguration {
+
+	}
+
+}
+```
+
+Spring Boot 2.0 开始，如果用户什么都不配置的话，默认使用 **CGLIB 动态代理**。如果需要强制使用 JDK 动态代理，可以在配置文件中添加：`spring.aop.proxy-target-class=false`。Spring Boot 2.0 自动配置 AOP 代码如下：
+
+```java
+@Configuration
+@ConditionalOnClass({ EnableAspectJAutoProxy.class, Aspect.class, Advice.class,
+		AnnotatedElement.class })
+@ConditionalOnProperty(prefix = "spring.aop", name = "auto", havingValue = "true", matchIfMissing = true)
+public class AopAutoConfiguration {
+
+	@Configuration
+	@EnableAspectJAutoProxy(proxyTargetClass = false)
+ // 该配置类只有在 spring.aop.proxy-target-class=false 时才会生效。
+ // 即开发者通过属性配置明确指定使用 JDK 动态代理时，Spring 会加载这个配置类。
+	@ConditionalOnProperty(prefix = "spring.aop", name = "proxy-target-class", havingValue = "false", matchIfMissing = false)
+	public static class JdkDynamicAutoProxyConfiguration {
+
+	}
+
+	@Configuration
+	@EnableAspectJAutoProxy(proxyTargetClass = true)
+ // 该配置类只有在 spring.aop.proxy-target-class=true 或未显式配置时才会生效。
+ // 也就是说，如果开发者未明确选择代理方式，Spring 会默认加载 CGLIB 代理。
+	@ConditionalOnProperty(prefix = "spring.aop", name = "proxy-target-class", havingValue = "true", matchIfMissing = true)
+	public static class CglibAutoProxyConfiguration {
+
+	}
+
+}
+```
 
 当然你也可以使用 **AspectJ** ！Spring AOP 已经集成了 AspectJ ，AspectJ 应该算的上是 Java 生态系统中最完整的 AOP 框架了。
 
 **Spring AOP 属于运行时增强，而 AspectJ 是编译时增强。** Spring AOP 基于代理(Proxying)，而 AspectJ 基于字节码操作(Bytecode Manipulation)。
 
-Spring AOP 已经集成了 AspectJ ，AspectJ 应该算的上是 Java 生态系统中最完整的 AOP 框架了。AspectJ 相比于 Spring AOP 功能更加强大，但是 Spring AOP 相对来说更简单，
+Spring AOP 已经集成了 AspectJ ，AspectJ 应该算的上是 Java 生态系统中最完整的 AOP 框架了。AspectJ 相比于 Spring AOP 功能更加强大，但是 Spring AOP 相对来说更简单。
 
 如果我们的切面比较少，那么两者性能差异不大。但是，当切面太多的话，最好选择 AspectJ ，它比 Spring AOP 快很多。
+
+## 参考
+
+- AOP in Spring Boot, is it a JDK dynamic proxy or a Cglib dynamic proxy?：<https://www.springcloud.io/post/2022-01/springboot-aop/>
+- Spring Proxying Mechanisms：<https://docs.spring.io/spring-framework/reference/core/aop/proxying.html>

@@ -1,9 +1,14 @@
 ---
 title: SQL语法基础知识总结
+description: SQL语法基础知识总结，系统讲解DDL数据定义、DML数据操作、DQL数据查询、DCL数据控制语言，涵盖表操作、约束、索引、事务、连接查询等核心知识点。
 category: 数据库
 tag:
   - 数据库基础
   - SQL
+head:
+  - - meta
+    - name: keywords
+      content: SQL语法,DDL,DML,DQL,DCL,CREATE,SELECT,INSERT,UPDATE,DELETE,JOIN连接,子查询
 ---
 
 > 本文整理完善自下面这两份资料：

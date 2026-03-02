@@ -1,8 +1,13 @@
 ---
 title: Java 常见并发容器总结
+description: Java并发容器全面总结：详解ConcurrentHashMap/CopyOnWriteArrayList/BlockingQueue等JUC线程安全容器特性、适用场景与性能对比。
 category: Java
 tag:
   - Java并发
+head:
+  - - meta
+    - name: keywords
+      content: Java并发容器,ConcurrentHashMap,CopyOnWriteArrayList,BlockingQueue,ConcurrentLinkedQueue,线程安全容器
 ---
 
 JDK 提供的这些容器大部分在 `java.util.concurrent` 包中。
@@ -142,7 +147,7 @@ private static ArrayBlockingQueue<Integer> blockingQueue = new ArrayBlockingQueu
 
 最低层的链表维护了跳表内所有的元素，每上面一层链表都是下面一层的子集。
 
-跳表内的所有链表的元素都是排序的。查找时，可以从顶级链表开始找。一旦发现被查找的元素大于当前链表中的取值，就会转入下一层链表继续找。这也就是说在查找过程中，搜索是跳跃式的。如上图所示，在跳表中查找元素 18。
+跳表内的所有链表的元素都是排序的。查找时，可以从顶级链表开始找。一旦发现被查找的元素小于当前访问节点的后继节点（或后继节点为空），就会转入下一层链表继续找。这也就是说在查找过程中，搜索是跳跃式的。如上图所示，在跳表中查找元素 18。
 
 ![在跳表中查找元素18](https://oss.javaguide.cn/github/javaguide/java/32005738.jpg)
 

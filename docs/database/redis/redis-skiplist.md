@@ -1,8 +1,13 @@
 ---
 title: Redis为什么用跳表实现有序集合
+description: 深入讲解Redis有序集合Zset为何选择跳表而非红黑树、B+树实现，详解跳表的数据结构原理、时间复杂度分析和Redis源码实现。
 category: 数据库
 tag:
   - Redis
+head:
+  - - meta
+    - name: keywords
+      content: Redis跳表,SkipList,有序集合,Zset,跳表原理,平衡树对比,Redis数据结构
 ---
 
 ## 前言
@@ -241,41 +246,40 @@ private int levelCount = 1;
 private Node h = new Node();
 
 public void add(int value) {
-
-    //随机生成高度
-    int level = randomLevel();
+    int level = randomLevel(); // 新节点的随机高度
 
     Node newNode = new Node();
     newNode.data = value;
     newNode.maxLevel = level;
 
-    //创建一个node数组，用于记录小于当前value的最大值
-    Node[] maxOfMinArr = new Node[level];
-    //默认情况下指向头节点
+    // 用于记录每层前驱节点的数组
+    Node[] update = new Node[level];
     for (int i = 0; i < level; i++) {
-        maxOfMinArr[i] = h;
+        update[i] = h;
     }
 
-    //基于上述结果拿到当前节点的后继节点
     Node p = h;
-    for (int i = level - 1; i >= 0; i--) {
+    // 关键修正：从跳表的当前最高层开始查找
+    for (int i = levelCount - 1; i >= 0; i--) {
         while (p.forwards[i] != null && p.forwards[i].data < value) {
             p = p.forwards[i];
         }
-        maxOfMinArr[i] = p;
+        // 只记录需要更新的层的前驱节点
+        if (i < level) {
+            update[i] = p;
+        }
     }
 
-    //更新前驱节点的后继节点为当前节点newNode
+    // 插入新节点
     for (int i = 0; i < level; i++) {
-        newNode.forwards[i] = maxOfMinArr[i].forwards[i];
-        maxOfMinArr[i].forwards[i] = newNode;
+        newNode.forwards[i] = update[i].forwards[i];
+        update[i].forwards[i] = newNode;
     }
 
-    //如果当前newNode高度大于跳表最高高度则更新levelCount
+    // 更新跳表的总高度
     if (levelCount < level) {
         levelCount = level;
     }
-
 }
 ```
 
@@ -283,33 +287,39 @@ public void add(int value) {
 
 查询逻辑比较简单，从跳表最高级的索引开始定位找到小于要查的 value 的最大值，以下图为例，我们希望查找到节点 8：
 
-1. 跳表的 3 级索引首先找找到 5 的索引，5 的 3 级索引 **forwards[3]** 指向空，索引直接向下。
-2. 来到 5 的 2 级索引，其后继 **forwards[2]** 指向 8，继续向下。
-3. 5 的 1 级索引 **forwards[1]** 指向索引 6，继续向前。
-4. 索引 6 的 **forwards[1]** 指向索引 8，继续向下。
-5. 我们在原始节点向前找到节点 7。
-6. 节点 7 后续就是节点 8，继续向前为节点 8，无法继续向下，结束搜寻。
-7. 判断 7 的前驱，等于 8，查找结束。
-
 ![](https://oss.javaguide.cn/javaguide/database/redis/skiplist/202401222005323.png)
+
+- **从最高层级开始 (3 级索引)** ：查找指针 `p` 从头节点开始。在 3 级索引上，`p` 的后继 `forwards[2]`（假设最高 3 层，索引从 0 开始）指向节点 `5`。由于 `5 < 8`，指针 `p` 向右移动到节点 `5`。节点 `5` 在 3 级索引上的后继 `forwards[2]` 为 `null`（或指向一个大于 `8` 的节点，图中未画出）。当前层级向右查找结束，指针 `p` 保持在节点 `5`，**向下移动到 2 级索引**。
+- **在 2 级索引**：当前指针 `p` 为节点 `5`。`p` 的后继 `forwards[1]` 指向节点 `8`。由于 `8` 不小于 `8`（即 `8 < 8` 为 `false`），当前层级向右查找结束（`p` 不会移动到节点 `8`）。指针 `p` 保持在节点 `5`，**向下移动到 1 级索引**。
+- **在 1 级索引** ：当前指针 `p` 为节点 `5`。`p` 的后继 `forwards[0]` 指向最底层的节点 `5`。由于 `5 < 8`，指针 `p` 向右移动到最底层的节点 `5`。此时，当前指针 `p` 为最底层的节点 `5`。其后继 `forwards[0]` 指向最底层的节点 `6`。由于 `6 < 8`，指针 `p` 向右移动到最底层的节点 `6`。当前指针 `p` 为最底层的节点 `6`。其后继 `forwards[0]` 指向最底层的节点 `7`。由于 `7 < 8`，指针 `p` 向右移动到最底层的节点 `7`。当前指针 `p` 为最底层的节点 `7`。其后继 `forwards[0]` 指向最底层的节点 `8`。由于 `8` 不小于 `8`（即 `8 < 8` 为 `false`），当前层级向右查找结束。此时，已经遍历完所有层级，`for` 循环结束。
+- **最终定位与检查** ：经过所有层级的查找，指针 `p` 最终停留在最底层（0 级索引）的节点 `7`。这个节点是整个跳表中值小于目标值 `8` 的那个最大的节点。检查节点 `7` 的**后继节点**（即 `p.forwards[0]`）：`p.forwards[0]` 指向节点 `8`。判断 `p.forwards[0].data`（即节点 `8` 的值）是否等于目标值 `8`。条件满足（`8 == 8`），**查找成功，找到节点 `8`**。
 
 所以我们的代码实现也很上述步骤差不多，从最高级索引开始向前查找，如果不为空且小于要查找的值，则继续向前搜寻，遇到不小于的节点则继续向下，如此往复，直到得到当前跳表中小于查找值的最大节点，查看其前驱是否等于要查找的值：
 
 ```java
 public Node get(int value) {
-    Node p = h;
-    //找到小于value的最大值
+    Node p = h; // 从头节点开始
+
+    // 从最高层级索引开始，逐层向下
     for (int i = levelCount - 1; i >= 0; i--) {
+        // 在当前层级向右查找，直到 p.forwards[i] 为 null
+        // 或者 p.forwards[i].data 大于等于目标值 value
         while (p.forwards[i] != null && p.forwards[i].data < value) {
-            p = p.forwards[i];
+            p = p.forwards[i]; // 向右移动
         }
-    }
-    //如果p的前驱节点等于value则直接返回
-    if (p.forwards[0] != null && p.forwards[0].data == value) {
-        return p.forwards[0];
+        // 此时 p.forwards[i] 为 null，或者 p.forwards[i].data >= value
+        // 或者 p 是当前层级中小于 value 的最大节点（如果存在这样的节点）
     }
 
-    return null;
+    // 经过所有层级的查找，p 现在是原始链表（0级索引）中
+    // 小于目标值 value 的最大节点（或者头节点，如果所有元素都大于等于 value）
+
+    // 检查 p 在原始链表中的下一个节点是否是目标值
+    if (p.forwards[0] != null && p.forwards[0].data == value) {
+        return p.forwards[0]; // 找到了，返回该节点
+    }
+
+    return null; // 未找到
 }
 ```
 
@@ -374,7 +384,7 @@ public class SkipList {
     /**
      * 每个节点添加一层索引高度的概率为二分之一
      */
-    private static final float PROB = 0.5 f;
+    private static final float PROB = 0.5f;
 
     /**
      * 默认情况下的高度为1，即只有自己一个节点
@@ -386,9 +396,11 @@ public class SkipList {
      */
     private Node h = new Node();
 
-    public SkipList() {}
+    public SkipList() {
+    }
 
     public class Node {
+
         private int data = -1;
         /**
          *
@@ -398,58 +410,55 @@ public class SkipList {
 
         @Override
         public String toString() {
-            return "Node{" +
-                "data=" + data +
-                ", maxLevel=" + maxLevel +
-                '}';
+            return "Node{"
+                    + "data=" + data
+                    + ", maxLevel=" + maxLevel
+                    + '}';
         }
     }
 
     public void add(int value) {
-
-        //随机生成高度
-        int level = randomLevel();
+        int level = randomLevel(); // 新节点的随机高度
 
         Node newNode = new Node();
         newNode.data = value;
         newNode.maxLevel = level;
 
-        //创建一个node数组，用于记录小于当前value的最大值
-        Node[] maxOfMinArr = new Node[level];
-        //默认情况下指向头节点
+        // 用于记录每层前驱节点的数组
+        Node[] update = new Node[level];
         for (int i = 0; i < level; i++) {
-            maxOfMinArr[i] = h;
+            update[i] = h;
         }
 
-        //基于上述结果拿到当前节点的后继节点
         Node p = h;
-        for (int i = level - 1; i >= 0; i--) {
+        // 关键修正：从跳表的当前最高层开始查找
+        for (int i = levelCount - 1; i >= 0; i--) {
             while (p.forwards[i] != null && p.forwards[i].data < value) {
                 p = p.forwards[i];
             }
-            maxOfMinArr[i] = p;
+            // 只记录需要更新的层的前驱节点
+            if (i < level) {
+                update[i] = p;
+            }
         }
 
-        //更新前驱节点的后继节点为当前节点newNode
+        // 插入新节点
         for (int i = 0; i < level; i++) {
-            newNode.forwards[i] = maxOfMinArr[i].forwards[i];
-            maxOfMinArr[i].forwards[i] = newNode;
+            newNode.forwards[i] = update[i].forwards[i];
+            update[i].forwards[i] = newNode;
         }
 
-        //如果当前newNode高度大于跳表最高高度则更新levelCount
+        // 更新跳表的总高度
         if (levelCount < level) {
             levelCount = level;
         }
-
     }
 
     /**
      * 理论来讲，一级索引中元素个数应该占原始数据的 50%，二级索引中元素个数占 25%，三级索引12.5% ，一直到最顶层。
-     * 因为这里每一层的晋升概率是 50%。对于每一个新插入的节点，都需要调用 randomLevel 生成一个合理的层数。
-     * 该 randomLevel 方法会随机生成 1~MAX_LEVEL 之间的数，且 ：
-     * 50%的概率返回 1
-     * 25%的概率返回 2
-     *  12.5%的概率返回 3 ...
+     * 因为这里每一层的晋升概率是 50%。对于每一个新插入的节点，都需要调用 randomLevel 生成一个合理的层数。 该 randomLevel
+     * 方法会随机生成 1~MAX_LEVEL 之间的数，且 ： 50%的概率返回 1 25%的概率返回 2 12.5%的概率返回 3 ...
+     *
      * @return
      */
     private int randomLevel() {
@@ -517,11 +526,11 @@ public class SkipList {
         }
 
     }
-
 }
+
 ```
 
-对应测试代码和输出结果如下：
+测试代码：
 
 ```java
 public static void main(String[] args) {
@@ -542,61 +551,6 @@ public static void main(String[] args) {
 
 
     }
-```
-
-输出结果:
-
-```bash
-**********输出添加结果**********
-Node{data=0, maxLevel=2}
-Node{data=1, maxLevel=3}
-Node{data=2, maxLevel=1}
-Node{data=3, maxLevel=1}
-Node{data=4, maxLevel=2}
-Node{data=5, maxLevel=2}
-Node{data=6, maxLevel=2}
-Node{data=7, maxLevel=2}
-Node{data=8, maxLevel=4}
-Node{data=9, maxLevel=1}
-Node{data=10, maxLevel=1}
-Node{data=11, maxLevel=1}
-Node{data=12, maxLevel=1}
-Node{data=13, maxLevel=1}
-Node{data=14, maxLevel=1}
-Node{data=15, maxLevel=3}
-Node{data=16, maxLevel=4}
-Node{data=17, maxLevel=2}
-Node{data=18, maxLevel=1}
-Node{data=19, maxLevel=1}
-Node{data=20, maxLevel=1}
-Node{data=21, maxLevel=3}
-Node{data=22, maxLevel=1}
-Node{data=23, maxLevel=1}
-**********查询结果:Node{data=22, maxLevel=1} **********
-**********删除结果**********
-Node{data=0, maxLevel=2}
-Node{data=1, maxLevel=3}
-Node{data=2, maxLevel=1}
-Node{data=3, maxLevel=1}
-Node{data=4, maxLevel=2}
-Node{data=5, maxLevel=2}
-Node{data=6, maxLevel=2}
-Node{data=7, maxLevel=2}
-Node{data=8, maxLevel=4}
-Node{data=9, maxLevel=1}
-Node{data=10, maxLevel=1}
-Node{data=11, maxLevel=1}
-Node{data=12, maxLevel=1}
-Node{data=13, maxLevel=1}
-Node{data=14, maxLevel=1}
-Node{data=15, maxLevel=3}
-Node{data=16, maxLevel=4}
-Node{data=17, maxLevel=2}
-Node{data=18, maxLevel=1}
-Node{data=19, maxLevel=1}
-Node{data=20, maxLevel=1}
-Node{data=21, maxLevel=3}
-Node{data=23, maxLevel=1}
 ```
 
 **Redis 跳表的特点**：

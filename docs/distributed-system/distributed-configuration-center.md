@@ -1,5 +1,6 @@
 ---
 title: 分布式配置中心常见问题总结(付费)
+description: 分布式配置中心核心概念与面试题解析，涵盖Apollo、Nacos等主流配置中心原理与实践要点。
 category: 分布式
 ---
 
@@ -8,5 +9,3 @@ category: 分布式
 ![](https://oss.javaguide.cn/javamianshizhibei/distributed-system.png)
 
 <!-- @include: @planet.snippet.md -->
-
-<!-- @include: @article-footer.snippet.md -->

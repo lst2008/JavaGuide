@@ -1,8 +1,13 @@
 ---
 title: BigDecimal 详解
+description: 详解BigDecimal使用方法：解决浮点数精度丢失问题，掌握加减乘除运算、RoundingMode舍入规则、compareTo比较方法，适用金融计算等高精度场景。
 category: Java
 tag:
   - Java基础
+head:
+  - - meta
+    - name: keywords
+      content: BigDecimal,浮点数精度,小数运算,RoundingMode舍入模式,BigDecimal比较,金额计算,精度丢失
 ---
 
 《阿里巴巴 Java 开发手册》中提到：“为了避免精度丢失，可以使用 `BigDecimal` 来进行浮点数的运算”。
@@ -21,7 +26,7 @@ System.out.println(a == b);// false
 
 **为什么浮点数 `float` 或 `double` 运算的时候会有精度丢失的风险呢？**
 
-这个和计算机保存浮点数的机制有很大关系。我们知道计算机是二进制的，而且计算机在表示一个数字时，宽度是有限的，无限循环的小数存储在计算机时，只能被截断，所以就会导致小数精度发生损失的情况。这也就是解释了为什么浮点数没有办法用二进制精确表示。
+这个和计算机保存小数的机制有很大关系。我们知道计算机是二进制的，而且计算机在表示一个数字时，宽度是有限的，无限循环的小数存储在计算机时，只能被截断，所以就会导致小数精度发生损失的情况。这也就解释了为什么十进制小数没有办法用二进制精确表示。
 
 就比如说十进制下的 0.2 就没办法精确转换成二进制小数：
 
@@ -40,9 +45,9 @@ System.out.println(a == b);// false
 
 ## BigDecimal 介绍
 
-`BigDecimal` 可以实现对浮点数的运算，不会造成精度丢失。
+`BigDecimal` 可以实现对小数的运算，不会造成精度丢失。
 
-通常情况下，大部分需要浮点数精确运算结果的业务场景（比如涉及到钱的场景）都是通过 `BigDecimal` 来做的。
+通常情况下，大部分需要小数精确运算结果的业务场景（比如涉及到钱的场景）都是通过 `BigDecimal` 来做的。
 
 《阿里巴巴 Java 开发手册》中提到：**浮点数之间的等值判断，基本数据类型不能用 == 来比较，包装数据类型不能用 equals 来判断。**
 
@@ -50,7 +55,7 @@ System.out.println(a == b);// false
 
 具体原因我们在上面已经详细介绍了，这里就不多提了。
 
-想要解决浮点数运算精度丢失这个问题，可以直接使用 `BigDecimal` 来定义浮点数的值，然后再进行浮点数的运算操作即可。
+想要解决浮点数运算精度丢失这个问题，可以直接使用 `BigDecimal` 来定义小数的值，然后再进行小数的运算操作即可。
 
 ```java
 BigDecimal a = new BigDecimal("1.0");
@@ -99,20 +104,20 @@ public BigDecimal divide(BigDecimal divisor, int scale, RoundingMode roundingMod
 
 ```java
 public enum RoundingMode {
-   // 2.5 -> 3 , 1.6 -> 2
-   // -1.6 -> -2 , -2.5 -> -3
+   // 2.4 -> 3 , 1.6 -> 2
+   // -1.6 -> -2 , -2.4 -> -3
    UP(BigDecimal.ROUND_UP),
-   // 2.5 -> 2 , 1.6 -> 1
-   // -1.6 -> -1 , -2.5 -> -2
+   // 2.4 -> 2 , 1.6 -> 1
+   // -1.6 -> -1 , -2.4 -> -2
    DOWN(BigDecimal.ROUND_DOWN),
-   // 2.5 -> 3 , 1.6 -> 2
-   // -1.6 -> -1 , -2.5 -> -2
+   // 2.4 -> 3 , 1.6 -> 2
+   // -1.6 -> -1 , -2.4 -> -2
    CEILING(BigDecimal.ROUND_CEILING),
    // 2.5 -> 2 , 1.6 -> 1
    // -1.6 -> -2 , -2.5 -> -3
    FLOOR(BigDecimal.ROUND_FLOOR),
-   // 2.5 -> 3 , 1.6 -> 2
-   // -1.6 -> -2 , -2.5 -> -3
+   // 2.4 -> 2 , 1.6 -> 2
+   // -1.6 -> -2 , -2.4 -> -2
    HALF_UP(BigDecimal.ROUND_HALF_UP),
    //......
 }
@@ -230,7 +235,7 @@ public class BigDecimalUtil {
 
     /**
      * 提供（相对）精确的除法运算，当发生除不尽的情况时，精确到
-     * 小数点以后10位，以后的数字四舍五入。
+     * 小数点以后10位，以后的数字四舍六入五成双。
      *
      * @param v1 被除数
      * @param v2 除数
@@ -242,7 +247,7 @@ public class BigDecimalUtil {
 
     /**
      * 提供（相对）精确的除法运算。当发生除不尽的情况时，由scale参数指
-     * 定精度，以后的数字四舍五入。
+     * 定精度，以后的数字四舍六入五成双。
      *
      * @param v1    被除数
      * @param v2    除数
@@ -260,11 +265,11 @@ public class BigDecimalUtil {
     }
 
     /**
-     * 提供精确的小数位四舍五入处理。
+     * 提供精确的小数位四舍六入五成双处理。
      *
-     * @param v     需要四舍五入的数字
+     * @param v     需要四舍六入五成双的数字
      * @param scale 小数点后保留几位
-     * @return 四舍五入后的结果
+     * @return 四舍六入五成双后的结果
      */
     public static double round(double v, int scale) {
         if (scale < 0) {
@@ -283,18 +288,18 @@ public class BigDecimalUtil {
      * @return 返回转换结果
      */
     public static float convertToFloat(double v) {
-        BigDecimal b = new BigDecimal(v);
+        BigDecimal b = BigDecimal.valueOf(v);
         return b.floatValue();
     }
 
     /**
-     * 提供精确的类型转换(Int)不进行四舍五入
+     * 提供精确的类型转换(Int)不进行四舍六入五成双
      *
      * @param v 需要被转换的数字
      * @return 返回转换结果
      */
     public static int convertsToInt(double v) {
-        BigDecimal b = new BigDecimal(v);
+        BigDecimal b = BigDecimal.valueOf(v);
         return b.intValue();
     }
 
@@ -305,7 +310,7 @@ public class BigDecimalUtil {
      * @return 返回转换结果
      */
     public static long convertsToLong(double v) {
-        BigDecimal b = new BigDecimal(v);
+        BigDecimal b = BigDecimal.valueOf(v);
         return b.longValue();
     }
 
@@ -317,8 +322,8 @@ public class BigDecimalUtil {
      * @return 返回两个数中大的一个值
      */
     public static double returnMax(double v1, double v2) {
-        BigDecimal b1 = new BigDecimal(v1);
-        BigDecimal b2 = new BigDecimal(v2);
+        BigDecimal b1 = BigDecimal.valueOf(v1);
+        BigDecimal b2 = BigDecimal.valueOf(v2);
         return b1.max(b2).doubleValue();
     }
 
@@ -330,8 +335,8 @@ public class BigDecimalUtil {
      * @return 返回两个数中小的一个值
      */
     public static double returnMin(double v1, double v2) {
-        BigDecimal b1 = new BigDecimal(v1);
-        BigDecimal b2 = new BigDecimal(v2);
+        BigDecimal b1 = BigDecimal.valueOf(v1);
+        BigDecimal b2 = BigDecimal.valueOf(v2);
         return b1.min(b2).doubleValue();
     }
 

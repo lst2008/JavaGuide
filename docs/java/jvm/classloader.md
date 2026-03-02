@@ -1,8 +1,13 @@
 ---
 title: 类加载器详解（重点）
+description: Java类加载器详解：深入剖析ClassLoader类加载机制、双亲委派模型原理、启动类加载器/扩展类加载器/应用类加载器、自定义类加载器实现、打破双亲委派场景。
 category: Java
 tag:
   - JVM
+head:
+  - - meta
+    - name: keywords
+      content: 类加载器,ClassLoader,双亲委派模型,类加载过程,自定义类加载器,打破双亲委派
 ---
 
 ## 回顾一下类加载过程
@@ -58,7 +63,7 @@ class Class<T> {
 }
 ```
 
-简单来说，**类加载器的主要作用就是加载 Java 类的字节码（ `.class` 文件）到 JVM 中（在内存中生成一个代表该类的 `Class` 对象）。** 字节码可以是 Java 源程序（`.java`文件）经过 `javac` 编译得来，也可以是通过工具动态生成或者通过网络下载得来。
+简单来说，**类加载器的主要作用就是动态加载 Java 类的字节码（ `.class` 文件）到 JVM 中（在内存中生成一个代表该类的 `Class` 对象）。** 字节码可以是 Java 源程序（`.java`文件）经过 `javac` 编译得来，也可以是通过工具动态生成或者通过网络下载得来。
 
 其实除了加载类之外，类加载器还可以加载 Java 应用所需的资源如文本、图像、配置文件、视频等等文件资源。本文只讨论其核心功能：加载类。
 
@@ -101,7 +106,7 @@ JVM 中内置了三个重要的 `ClassLoader`：
 
 除了 `BootstrapClassLoader` 是 JVM 自身的一部分之外，其他所有的类加载器都是在 JVM 外部实现的，并且全都继承自 `ClassLoader`抽象类。这样做的好处是用户可以自定义类加载器，以便让应用程序自己决定如何去获取所需的类。
 
-每个 `ClassLoader` 可以通过`getParent()`获取其父 `ClassLoader`，如果获取到 `ClassLoader` 为`null`的话，那么该类是通过 `BootstrapClassLoader` 加载的。
+每个 `ClassLoader` 可以通过`getParent()`获取其父 `ClassLoader`，如果获取到的 `ClassLoader` 为`null`的话，那么该类加载器的父类加载器是 `BootstrapClassLoader` 。
 
 ```java
 public abstract class ClassLoader {
@@ -116,7 +121,7 @@ public abstract class ClassLoader {
 }
 ```
 
-**为什么 获取到 `ClassLoader` 为`null`就是 `BootstrapClassLoader` 加载的呢？** 这是因为`BootstrapClassLoader` 由 C++ 实现，由于这个 C++ 实现的类加载器在 Java 中是没有与之对应的类的，所以拿到的结果是 null。
+**为什么获取到 `ClassLoader` 为`null`就是 `BootstrapClassLoader` 加载的呢？** 这是因为`BootstrapClassLoader` 由 C++ 实现，由于这个 C++ 实现的类加载器在 Java 中是没有与之对应的类的，所以拿到的结果是 null。
 
 下面我们来看一个获取 `ClassLoader` 的小案例：
 
@@ -281,9 +286,50 @@ protected Class<?> loadClass(String name, boolean resolve)
 
 ### 双亲委派模型的好处
 
-双亲委派模型保证了 Java 程序的稳定运行，可以避免类的重复加载（JVM 区分不同类的方式不仅仅根据类名，相同的类文件被不同的类加载器加载产生的是两个不同的类），也保证了 Java 的核心 API 不被篡改。
+双亲委派模型是 Java 类加载机制的重要组成部分，它通过委派父加载器优先加载类的方式，实现了两个关键的安全目标：避免类的重复加载和防止核心 API 被篡改。
 
-如果没有使用双亲委派模型，而是每个类加载器加载自己的话就会出现一些问题，比如我们编写一个称为 `java.lang.Object` 类的话，那么程序运行的时候，系统就会出现两个不同的 `Object` 类。双亲委派模型可以保证加载的是 JRE 里的那个 `Object` 类，而不是你写的 `Object` 类。这是因为 `AppClassLoader` 在加载你的 `Object` 类时，会委托给 `ExtClassLoader` 去加载，而 `ExtClassLoader` 又会委托给 `BootstrapClassLoader`，`BootstrapClassLoader` 发现自己已经加载过了 `Object` 类，会直接返回，不会去加载你写的 `Object` 类。
+JVM 区分不同类的依据是类名加上加载该类的类加载器，即使类名相同，如果由不同的类加载器加载，也会被视为不同的类。 双亲委派模型确保核心类总是由 `BootstrapClassLoader` 加载，保证了核心类的唯一性。
+
+例如，当应用程序尝试加载 `java.lang.Object` 时，`AppClassLoader` 会首先将请求委派给 `ExtClassLoader`，`ExtClassLoader` 再委派给 `BootstrapClassLoader`。`BootstrapClassLoader` 会在 JRE 核心类库中找到并加载 `java.lang.Object`，从而保证应用程序使用的是 JRE 提供的标准版本。
+
+有很多小伙伴就要说了：“那我绕过双亲委派模型不就可以了么？”。
+
+然而，即使攻击者绕过了双亲委派模型，Java 仍然具备更底层的安全机制来保护核心类库。`ClassLoader` 的 `preDefineClass` 方法会在定义类之前进行类名校验。任何以 `"java."` 开头的类名都会触发 `SecurityException`，阻止恶意代码定义或加载伪造的核心类。
+
+JDK 8 中`ClassLoader#preDefineClass` 方法源码如下：
+
+```java
+private ProtectionDomain preDefineClass(String name,
+                                            ProtectionDomain pd)
+    {
+        // 检查类名是否合法
+        if (!checkName(name)) {
+            throw new NoClassDefFoundError("IllegalName: " + name);
+        }
+
+        // 防止在 "java.*" 包中定义类。
+        // 此检查对于安全性至关重要，因为它可以防止恶意代码替换核心 Java 类。
+        // JDK 9 利用平台类加载器增强了 preDefineClass 方法的安全性
+        if ((name != null) && name.startsWith("java.")) {
+            throw new SecurityException
+                ("禁止的包名: " +
+                 name.substring(0, name.lastIndexOf('.')));
+        }
+
+         // 如果未指定 ProtectionDomain，则使用默认域（defaultDomain）。
+        if (pd == null) {
+            pd = defaultDomain;
+        }
+
+        if (name != null) {
+            checkCerts(name, pd.getCodeSource());
+        }
+
+        return pd;
+    }
+```
+
+JDK 9 中这部分逻辑有所改变，多了平台类加载器（`getPlatformClassLoader()` 方法获取），增强了 `preDefineClass` 方法的安全性。这里就不贴源码了，感兴趣的话，可以自己去看看。
 
 ### 打破双亲委派模型方法
 
@@ -313,12 +359,28 @@ Tomcat 这四个自定义的类加载器对应的目录如下：
 从图中的委派关系中可以看出：
 
 - `CommonClassLoader`作为 `CatalinaClassLoader` 和 `SharedClassLoader` 的父加载器。`CommonClassLoader` 能加载的类都可以被 `CatalinaClassLoader` 和 `SharedClassLoader` 使用。因此，`CommonClassLoader` 是为了实现公共类库（可以被所有 Web 应用和 Tomcat 内部组件使用的类库）的共享和隔离。
-- `CatalinaClassLoader` 和 `SharedClassLoader` 能加载的类则与对方相互隔离。`CatalinaClassLoader` 用于加载 Tomcat 自身的类，为了隔离 Tomcat 本身的类和 Web 应用的类。`SharedClassLoader` 作为 `WebAppClassLoader` 的父加载器，专门来加载 Web 应用之间共享的类比如 Spring、Mybatis。
+- `CatalinaClassLoader` 和 `SharedClassLoader` 能加载的类则与对方相互隔离。`CatalinaClassLoader` 用于加载 Tomcat 自身的类，为了隔离 Tomcat 本身的类和 Web 应用的类。`SharedClassLoader` 作为 `WebAppClassLoader` 的父加载器，专门来加载 Web 应用之间共享的类，但是在Tomcat的默认配置下`catalina.properties`配置文件的`shared.loader= `值为空，所以`SharedClassLoader` 并不生效，`SharedClassLoader` 实际上会退化为 `CommonClassLoader`，`SharedClassLoader`比较合适用来加载多个web应用间共享的类库，比如整个公司级别的监控、日志等。
 - 每个 Web 应用都会创建一个单独的 `WebAppClassLoader`，并在启动 Web 应用的线程里设置线程线程上下文类加载器为 `WebAppClassLoader`。各个 `WebAppClassLoader` 实例之间相互隔离，进而实现 Web 应用之间的类隔。
 
 单纯依靠自定义类加载器没办法满足某些场景的要求，例如，有些情况下，高层的类加载器需要加载低层的加载器才能加载的类。
 
 比如，SPI 中，SPI 的接口（如 `java.sql.Driver`）是由 Java 核心库提供的，由`BootstrapClassLoader` 加载。而 SPI 的实现（如`com.mysql.cj.jdbc.Driver`）是由第三方供应商提供的，它们是由应用程序类加载器或者自定义类加载器来加载的。默认情况下，一个类及其依赖类由同一个类加载器加载。所以，加载 SPI 的接口的类加载器（`BootstrapClassLoader`）也会用来加载 SPI 的实现。按照双亲委派模型，`BootstrapClassLoader` 是无法找到 SPI 的实现类的，因为它无法委托给子类加载器去尝试加载。
+
+这里需要注意：JDK 9+ 之后引入模块化，JDBC API 被拆分到 `java.sql` 模块中，不再是 `BootstrapClassLoader` 直接加载，而是由 `PlatformClassLoader` 加载。
+
+```java
+public class ClassLoaderTest {
+    public static void main(String[] args) throws ClassNotFoundException {
+        Class<?> clazz = Class.forName("java.sql.Driver");
+        ClassLoader loader = clazz.getClassLoader();
+        System.out.println("Loader for java.sql.Driver: " + loader);
+
+        // .jdks/corretto-1.8.0_442/bin/java 环境下为 Loader for java.sql.Driver: null
+
+        // .jdks/jbr-17.0.12/bin/java 环境下为 Loader for java.sql.Driver: jdk.internal.loader.ClassLoaders$PlatformClassLoader@30f39991
+    }
+}
+```
 
 再比如，假设我们的项目中有 Spring 的 jar 包，由于其是 Web 应用之间共享的，因此会由 `SharedClassLoader` 加载（Web 服务器是 Tomcat）。我们项目中有一些用到了 Spring 的业务类，比如实现了 Spring 提供的接口、用到了 Spring 提供的注解。所以，加载 Spring 的类加载器（也就是 `SharedClassLoader`）也会用来加载这些业务类。但是业务类在 Web 应用目录下，不在 `SharedClassLoader` 的加载路径下，所以 `SharedClassLoader` 无法找到业务类，也就无法加载它们。
 

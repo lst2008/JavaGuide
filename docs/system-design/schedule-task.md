@@ -2,13 +2,11 @@
 title: Java 定时任务详解
 category: 系统设计
 icon: "time"
+description: 系统讲解 Java 定时任务与延时任务：Timer、ScheduledThreadPoolExecutor、DelayQueue、时间轮、Spring @Scheduled（Cron 表达式），以及 Quartz、XXL-JOB、ElasticJob、PowerJob 等分布式任务调度框架的选型对比与适用场景（订单超时取消/定时备份/定时抓取）。
 head:
   - - meta
     - name: keywords
       content: 定时任务,Quartz,Elastic-Job,XXL-JOB,PowerJob
-  - - meta
-    - name: description
-      content: XXL-JOB 2015 年推出，已经经过了很多年的考验。XXL-JOB 轻量级，并且使用起来非常简单。虽然存在性能瓶颈，但是，在绝大多数情况下，对于企业的基本需求来说是没有影响的。PowerJob 属于分布式任务调度领域里的新星，其稳定性还有待继续考察。ElasticJob 由于在架构设计上是基于 Zookeeper ，而 XXL-JOB 是基于数据库，性能方面的话，ElasticJob 略胜一筹。
 ---
 
 ## 为什么需要定时任务？
@@ -293,7 +291,7 @@ public class TestJob implements SimpleJob {
 
 > Quartz 作为开源作业调度中的佼佼者，是作业调度的首选。但是集群环境中 Quartz 采用 API 的方式对任务进行管理，从而可以避免上述问题，但是同样存在以下问题：
 >
-> - 问题一：调用 API 的的方式操作任务，不人性化；
+> - 问题一：调用 API 的方式操作任务，不人性化；
 > - 问题二：需要持久化业务 QuartzJobBean 到底层数据表中，系统侵入性相当严重。
 > - 问题三：调度逻辑和 QuartzJobBean 耦合在同一个项目中，这将导致一个问题，在调度任务数量逐渐增多，同时调度任务逻辑逐渐加重的情况下，此时调度系统的性能将大大受限于业务；
 > - 问题四：quartz 底层以“抢占式”获取 DB 锁并由抢占成功节点负责运行任务，会导致节点负载悬殊非常大；而 XXL-JOB 通过执行器实现“协同分配式”运行任务，充分发挥集群优势，负载各节点均衡。

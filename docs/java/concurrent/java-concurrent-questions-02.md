@@ -1,22 +1,20 @@
 ---
 title: Java并发常见面试题总结（中）
+description: Java并发进阶面试题：深入解析synchronized与ReentrantLock区别、volatile可见性保证、JMM内存模型、happens-before原则等并发编程核心机制。
 category: Java
 tag:
   - Java并发
 head:
   - - meta
     - name: keywords
-      content: 多线程,死锁,synchronized,ReentrantLock,volatile,ThreadLocal,线程池,CAS,AQS
-  - - meta
-    - name: description
-      content: Java并发常见知识点和面试题总结（含详细解答）。
+      content: synchronized,ReentrantLock,volatile,JMM,happens-before,可见性,原子性,有序性,并发面试题
 ---
 
 <!-- @include: @article-header.snippet.md -->
 
 ## ⭐️JMM(Java 内存模型)
 
-JMM（Java 内存模型）相关的问题比较多，也比较重要，于是我单独抽了一篇文章来总结 JMM 相关的知识点和问题：[JMM（Java 内存模型）详解](./jmm.md) 。
+JMM（Java 内存模型）相关的问题比较多，也比较重要，于是我单独抽了一篇文章来总结 JMM 相关的知识点和问题：[JMM（Java 内存模型）详解](https://javaguide.cn/java/concurrent/jmm.html) 。
 
 ## ⭐️volatile 关键字
 
@@ -60,7 +58,7 @@ public class Singleton {
     private Singleton() {
     }
 
-    public  static Singleton getUniqueInstance() {
+    public static Singleton getUniqueInstance() {
        //先判断对象是否已经实例过，没有实例化过才进入加锁代码
         if (uniqueInstance == null) {
             //类对象加锁
@@ -427,6 +425,19 @@ CAS 操作仅能对单个共享变量有效。当需要操作多个共享变量�
 
 除了 `AtomicReference` 这种方式之外，还可以利用加锁来保证。
 
+### 总结
+
+| **对比维度**    | **乐观锁 (Optimistic Locking)**             | **悲观锁 (Pessimistic Locking)**             |
+| --------------- | ------------------------------------------- | -------------------------------------------- |
+| **核心假设**    | 假设冲突很少发生，提交时才验证。            | 假设冲突必然发生，读取时就加锁。             |
+| **底层原理**    | **CAS (Compare And Swap)** 或版本号机制。   | **操作系统互斥锁**，涉及内核态切换。         |
+| **阻塞情况**    | **非阻塞**。失败后由业务逻辑决定是否重试。  | **阻塞**。其他线程必须排队等待锁释放。       |
+| **并发开销**    | **CPU 消耗**（高并发写时频繁自旋重试）。    | **上下文切换开销**（线程挂起与唤醒）。       |
+| **死锁风险**    | **无死锁**（因为不涉及持有锁的等待）。      | **有死锁风险**（多个锁相互等待）。           |
+| **数据库实现**  | `UPDATE ... SET version = version + 1`      | `SELECT ... FOR UPDATE`                      |
+| **Java 代表类** | `AtomicInteger`、`LongAdder`、`StampedLock` | `synchronized`、`ReentrantLock`              |
+| **适用场景**    | **多读少写**、并发冲突概率低的业务。        | **多写少读**、数据一致性要求极高的核心业务。 |
+
 ## synchronized 关键字
 
 ### synchronized 是什么？有什么用？
@@ -475,8 +486,8 @@ synchronized static void method() {
 
 对括号里指定的对象/类加锁：
 
-- `synchronized(object)` 表示进入同步代码库前要获得 **给定对象的锁**。
-- `synchronized(类.class)` 表示进入同步代码前要获得 **给定 Class 的锁**
+- `synchronized(object)` 表示进入同步代码块前要获得 **给定对象的锁**。
+- `synchronized(类.class)` 表示进入同步代码块前要获得 **给定 Class 的锁**
 
 ```java
 synchronized(this) {
@@ -530,13 +541,13 @@ public class SynchronizedDemo {
 
 ![执行 monitorenter 获取锁](https://oss.javaguide.cn/github/javaguide/java/concurrent/synchronized-get-lock-code-block.png)
 
-对象锁的的拥有者线程才可以执行 `monitorexit` 指令来释放锁。在执行 `monitorexit` 指令后，将锁计数器设为 0，表明锁被释放，其他线程可以尝试获取锁。
+对象锁的拥有者线程才可以执行 `monitorexit` 指令来释放锁。在执行 `monitorexit` 指令后，将锁计数器设为 0，表明锁被释放，其他线程可以尝试获取锁。
 
 ![执行 monitorexit 释放锁](https://oss.javaguide.cn/github/javaguide/java/concurrent/synchronized-release-lock-block.png)
 
 如果获取对象锁失败，那当前线程就要阻塞等待，直到锁被另外一个线程释放为止。
 
-#### synchronized 修饰方法的的情况
+#### synchronized 修饰方法的情况
 
 ```java
 public class SynchronizedDemo2 {
@@ -664,7 +675,7 @@ public class SynchronizedDemo {
 
 `synchronized` 是依赖于 JVM 实现的，前面我们也讲到了 虚拟机团队在 JDK1.6 为 `synchronized` 关键字进行了很多优化，但是这些优化都是在虚拟机层面实现的，并没有直接暴露给我们。
 
-`ReentrantLock` 是 JDK 层面实现的（也就是 API 层面，需要 lock() 和 unlock() 方法配合 try/finally 语句块来完成），所以我们可以通过查看它的源代码，来看它是如何实现的。
+`ReentrantLock` 是 JDK 层面实现的（也就是 API 层面，需要 `lock()` 和 `unlock()` 方法配合 `try/finally` 语句块来完成），所以我们可以通过查看它的源代码，来看它是如何实现的。
 
 #### ReentrantLock 比 synchronized 增加了一些高级功能
 
@@ -672,7 +683,7 @@ public class SynchronizedDemo {
 
 - **等待可中断** : `ReentrantLock`提供了一种能够中断等待锁的线程的机制，通过 `lock.lockInterruptibly()` 来实现这个机制。也就是说当前线程在等待获取锁的过程中，如果其他线程中断当前线程「 `interrupt()` 」，当前线程就会抛出 `InterruptedException` 异常，可以捕捉该异常进行相应处理。
 - **可实现公平锁** : `ReentrantLock`可以指定是公平锁还是非公平锁。而`synchronized`只能是非公平锁。所谓的公平锁就是先等待的线程先获得锁。`ReentrantLock`默认情况是非公平的，可以通过 `ReentrantLock`类的`ReentrantLock(boolean fair)`构造方法来指定是否是公平的。
-- **可实现选择性通知（锁可以绑定多个条件）**: `synchronized`关键字与`wait()`和`notify()`/`notifyAll()`方法相结合可以实现等待/通知机制。`ReentrantLock`类当然也可以实现，但是需要借助于`Condition`接口与`newCondition()`方法。
+- **通知机制更强大**：`ReentrantLock` 通过绑定多个 `Condition` 对象，可以实现分组唤醒和选择性通知。这解决了 `synchronized` 只能随机唤醒或全部唤醒的效率问题，为复杂的线程协作场景提供了强大的支持。
 - **支持超时** ：`ReentrantLock` 提供了 `tryLock(timeout)` 的方法，可以指定等待获取锁的最长等待时间，如果超过了等待时间，就会获取锁失败，不会一直等待。
 
 如果你想使用上述功能，那么选择 `ReentrantLock` 是一个不错的选择。
@@ -762,8 +773,14 @@ public class SynchronizedDemo {
 
 ### 可中断锁和不可中断锁有什么区别？
 
-- **可中断锁**：获取锁的过程中可以被中断，不需要一直等到获取锁之后 才能进行其他逻辑处理。`ReentrantLock` 就属于是可中断锁。
-- **不可中断锁**：一旦线程申请了锁，就只能等到拿到锁以后才能进行其他的逻辑处理。 `synchronized` 就属于是不可中断锁。
+它们的区别在于：**线程在获取锁的过程中被阻塞时，是否能够因为中断而提前放弃等待。**
+
+- **不可中断锁**：线程在等待锁期间即使收到中断信号，也不会退出阻塞状态，而是一直等待直到获得锁。中断状态会被保留，但不会影响锁的获取过程。
+  - `synchronized` 属于典型的不可中断锁。
+  - `ReentrantLock#lock()` 也是不可中断的。
+- **可中断锁**：线程在等待锁的过程中如果收到中断信号，会立即停止等待并抛出 `InterruptedException`，从而有机会进行取消或错误处理。
+  - `ReentrantLock#lockInterruptibly()` 实现了可中断锁。
+  - `ReentrantLock#tryLock(long time, TimeUnit unit)` （带超时的尝试获取）也是可中断的。
 
 ## ReentrantReadWriteLock
 
@@ -792,7 +809,7 @@ public interface ReadWriteLock {
 
 ![](https://oss.javaguide.cn/github/javaguide/java/concurrent/reentrantreadwritelock-class-diagram.png)
 
-`ReentrantReadWriteLock` 也支持公平锁和非公平锁，默认使用非公平锁，可以通过构造器来显示的指定。
+`ReentrantReadWriteLock` 也支持公平锁和非公平锁，默认使用非公平锁，可以通过构造器来显式地指定。
 
 ```java
 // 传入一个 boolean 值，true 时为公平锁，false 时为非公平锁
@@ -826,6 +843,32 @@ public ReentrantReadWriteLock(boolean fair) {
 另外，还可能会有死锁问题发生。举个例子：假设两个线程的读锁都想升级写锁，则需要对方都释放自己锁，而双方都不释放，就会产生死锁。
 
 ## StampedLock
+
+```mermaid
+flowchart TB
+    subgraph StampedLock["StampedLock(JDK1.8+)"]
+        style StampedLock fill:#F0F2F5,stroke:#E0E6ED,rx:10,ry:10
+        subgraph Modes["模式分类"]
+            style Modes fill:#F5F7FA,stroke:#E0E6ED,rx:10,ry:10
+            Write(["写锁（独占）：单线程持有，阻塞其他读写"]):::write
+            Read(["读锁（悲观读）：无写锁时多线程共享"]):::read
+            Optimistic(["乐观读：无写锁时直接访问，提交时验证"]):::optimistic
+        end
+        subgraph Features["核心特点"]
+            style Features fill:#F5F7FA,stroke:#E0E6ED,rx:10,ry:10
+            F1(["不可重入，不支持Condition"]):::feature
+            F2(["性能优秀（乐观读减少阻塞）"]):::feature
+            F3(["适用场景：读多写少，无重入需求"]):::feature
+        end
+    end
+
+    classDef write fill:#C44545,color:#fff,rx:10,ry:10
+    classDef read fill:#00838F,color:#fff,rx:10,ry:10
+    classDef optimistic fill:#4CA497,color:#fff,rx:10,ry:10
+    classDef feature fill:#E99151,color:#333,rx:10,ry:10
+
+    linkStyle default stroke-width:1.5px,opacity:0.8
+```
 
 `StampedLock` 面试中问的比较少，不是很重要，简单了解即可。
 

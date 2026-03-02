@@ -1,8 +1,13 @@
 ---
 title: 类文件结构详解
+description: 介绍 Java 字节码 Class 文件结构与常量池等核心组成，辅助理解编译产物。
 category: Java
 tag:
   - JVM
+head:
+  - - meta
+    - name: keywords
+      content: Class 文件,常量池,魔数,版本,字段,方法,属性
 ---
 
 ## 回顾一下字节码
@@ -36,7 +41,7 @@ ClassFile {
     u2             fields_count;//字段数量
     field_info     fields[fields_count];//一个类可以有多个字段
     u2             methods_count;//方法数量
-    method_info    methods[methods_count];//一个类可以有个多个方法
+    method_info    methods[methods_count];//一个类可以有多个方法
     u2             attributes_count;//此类的属性表中的属性数
     attribute_info attributes[attributes_count];//属性表集合
 }
@@ -73,7 +78,7 @@ ClassFile {
 
 每当 Java 发布大版本（比如 Java 8，Java9）的时候，主版本号都会加 1。你可以使用 `javap -v` 命令来快速查看 Class 文件的版本号信息。
 
-高版本的 Java 虚拟机可以执行低版本编译器生成的 Class 文件，但是低版本的 Java 虚拟机不能执行高版本编译器生成的 Class 文件。所以，我们在实际开发的时候要确保开发的的 JDK 版本和生产环境的 JDK 版本保持一致。
+高版本的 Java 虚拟机可以执行低版本编译器生成的 Class 文件，但是低版本的 Java 虚拟机不能执行高版本编译器生成的 Class 文件。所以，我们在实际开发的时候要确保开发的 JDK 版本和生产环境的 JDK 版本保持一致。
 
 ### 常量池（Constant Pool）
 
@@ -84,7 +89,7 @@ ClassFile {
 
 紧接着主次版本号之后的是常量池，常量池的数量是 `constant_pool_count-1`（**常量池计数器是从 1 开始计数的，将第 0 项常量空出来是有特殊考虑的，索引值为 0 代表“不引用任何一个常量池项”**）。
 
-常量池主要存放两大常量：字面量和符号引用。字面量比较接近于 Java 语言层面的的常量概念，如文本字符串、声明为 final 的常量值等。而符号引用则属于编译原理方面的概念。包括下面三类常量：
+常量池主要存放两大常量：字面量和符号引用。字面量比较接近于 Java 语言层面的常量概念，如文本字符串、声明为 final 的常量值等。而符号引用则属于编译原理方面的概念。包括下面三类常量：
 
 - 类和接口的全限定名
 - 字段的名称和描述符
@@ -174,13 +179,13 @@ Java 类的继承关系由类索引、父类索引和接口索引集合三项确
 
 **字段的 access_flag 的取值:**
 
-![字段的 access_flag 的取值](https://oss.javaguide.cn/JVM/image-20201031084342859.png)
+![字段的 access_flag 的取值](https://oss.javaguide.cn/github/javaguide/java/jvm/class-file-fields-access_flag.png)
 
 ### 方法表集合（Methods）
 
 ```java
     u2             methods_count;//方法数量
-    method_info    methods[methods_count];//一个类可以有个多个方法
+    method_info    methods[methods_count];//一个类可以有多个方法
 ```
 
 methods_count 表示方法的数量，而 method_info 表示方法表。
@@ -193,7 +198,7 @@ Class 文件存储格式中对方法的描述与对字段的描述几乎采用�
 
 **方法表的 access_flag 取值：**
 
-![方法表的 access_flag 取值](https://oss.javaguide.cn/JVM/image-20201031084248965.png)
+![方法表的 access_flag 取值](https://oss.javaguide.cn/github/javaguide/java/jvm/class-file-methods-access_flag.png)
 
 注意：因为`volatile`修饰符和`transient`修饰符不可以修饰方法，所以方法表的访问标志中没有这两个对应的标志，但是增加了`synchronized`、`native`、`abstract`等关键字修饰方法，所以也就多了这些关键字对应的标志。
 

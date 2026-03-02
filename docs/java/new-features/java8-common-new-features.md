@@ -1,13 +1,33 @@
 ---
 title: Java8 新特性实战
+description: 实战讲解 Java 8 的核心新特性，包括 Lambda、Stream、Optional、日期时间 API 与接口默认方法等。
 category: Java
 tag:
   - Java新特性
+head:
+  - - meta
+    - name: keywords
+      content: Java 8,Lambda,Stream API,Optional,Date/Time API,默认方法,函数式接口
 ---
 
 > 本文来自[cowbi](https://github.com/cowbi)的投稿~
 
 <!-- markdownlint-disable MD024 -->
+
+JDK 8 于 2014 年 3 月 18 日发布，这是一个 LTS（长期支持版）版本，是目前市场上使用最多的 JDK 版本。至此为止，目前有 JDK8、JDK11、JDK17、JDK21 和 JDK 25 这五个长期支持版了。
+
+JDK 8 引入了许多重要的新特性，这篇文章会挑选其中较为重要的一些新特性进行详细介绍：
+
+- Lambda 表达式
+- Stream API
+- Optional 类
+- Date-Time API
+- 接口默认方法
+- 函数式接口
+
+下图是从 JDK 8 到 JDK 24 每个版本的更新带来的新特性数量和更新时间：
+
+![](https://oss.javaguide.cn/github/javaguide/java/new-features/jdk8~jdk24.png)
 
 Oracle 于 2014 发布了 Java8（jdk1.8），诸多原因使它成为目前市场上使用最多的 jdk 版本。虽然发布距今已将近 7 年，但很多程序员对其新特性还是不够了解，尤其是用惯了 Java8 之前版本的老程序员，比如我。
 
@@ -95,9 +115,7 @@ public class InterfaceNewImpl implements InterfaceNew , InterfaceNew1{
 
 在 java 8 中专门有一个包放函数式接口`java.util.function`，该包下的所有接口都有 `@FunctionalInterface` 注解，提供函数式编程。
 
-在其他包中也有函数式接口，其中一些没有`@FunctionalInterface` 注解，但是只要符合函数式接口的定义就是函数式接口，与是否有
-
-`@FunctionalInterface`注解无关，注解只是在编译时起到强制规范定义的作用。其在 Lambda 表达式中有广泛的应用。
+在其他包中也有函数式接口，其中一些没有`@FunctionalInterface` 注解，但是只要符合函数式接口的定义就是函数式接口，与是否有`@FunctionalInterface`注解无关，注解只是在编译时起到强制规范定义的作用。其在 Lambda 表达式中有广泛的应用。
 
 ## Lambda 表达式
 
@@ -361,7 +379,7 @@ Stream<T> limit(long maxSize);
 Stream<T> sorted(Comparator<? super T> comparator);
 
 /**
-* 在丢弃流的第一个 n元素后，返回由该流的 n元素组成的流。
+* 丢弃此流中的前 n 个元素，返回由剩余元素组成的新流。
 */
 Stream<T> skip(long n);
 
@@ -859,7 +877,7 @@ LocalDate date = LocalDate.of(2021, 1, 26);
 LocalDate.parse("2021-01-26");
 
 LocalDateTime dateTime = LocalDateTime.of(2021, 1, 26, 12, 12, 22);
-LocalDateTime.parse("2021-01-26 12:12:22");
+LocalDateTime.parse("2021-01-26T12:12:22");
 
 LocalTime time = LocalTime.of(12, 12, 22);
 LocalTime.parse("12:12:22");

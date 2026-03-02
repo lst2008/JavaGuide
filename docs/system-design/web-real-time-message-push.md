@@ -1,14 +1,12 @@
 ---
 title: Web 实时消息推送详解
+description: 消息推送通常是指网站的运营工作等人员，通过某种工具对用户当前网页或移动设备 APP 进行的主动消息推送。
 category: 系统设计
 icon: "messages"
 head:
   - - meta
     - name: keywords
-      content: 消息推送,短轮询,长轮询,SSE,Websocket,MQTT
-  - - meta
-    - name: description
-      content: 消息推送通常是指网站的运营工作等人员，通过某种工具对用户当前网页或移动设备 APP 进行的主动消息推送。
+      content: Web消息推送,实时消息,WebSocket,SSE,长轮询,短轮询,MQTT,实时通信方案
 ---
 
 > 原文地址：<https://juejin.cn/post/7122014462181113887，JavaGuide> 对本文进行了完善总结。
@@ -199,7 +197,7 @@ iframe 流非常不友好，强烈不推荐。
 
 SSE 基于 HTTP 协议的，我们知道一般意义上的 HTTP 协议是无法做到服务端主动向客户端推送消息的，但 SSE 是个例外，它变换了一种思路。
 
-![](https://oss.javaguide.cn/github/javaguide/system-design/web-real-time-message-push/1460000042192390.png)
+![SSE 图解](https://oss.javaguide.cn/github/javaguide/system-design/web-real-time-message-push/1460000042192390.png)
 
 SSE 在服务器和客户端之间打开一个单向通道，服务端响应的不再是一次性的数据包而是`text/event-stream`类型的数据流信息，在有数据变更时从服务器流式传输到客户端。
 
@@ -217,11 +215,11 @@ SSE 与 WebSocket 作用相似，都可以建立服务端与浏览器之间的�
 
 **SSE 与 WebSocket 该如何选择？**
 
-> 技术并没有好坏之分，只有哪个更合适
+> 技术并没有好坏之分，只有哪个更合适。
 
 SSE 好像一直不被大家所熟知，一部分原因是出现了 WebSocket，这个提供了更丰富的协议来执行双向、全双工通信。对于游戏、即时通信以及需要双向近乎实时更新的场景，拥有双向通道更具吸引力。
 
-但是，在某些情况下，不需要从客户端发送数据。而你只需要一些服务器操作的更新。比如：站内信、未读消息数、状态更新、股票行情、监控数量等场景，SEE 不管是从实现的难易和成本上都更加有优势。此外，SSE 具有 WebSocket 在设计上缺乏的多种功能，例如：自动重新连接、事件 ID 和发送任意事件的能力。
+但是，在某些情况下，不需要从客户端发送数据。而你只需要一些服务器操作的更新。比如：站内信、未读消息数、状态更新、股票行情、监控数量等场景，SSE 不管是从实现的难易和成本上都更加有优势。此外，SSE 具有 WebSocket 在设计上缺乏的多种功能，例如：自动重新连接、事件 ID 和发送任意事件的能力。
 
 前端只需进行一次 HTTP 请求，带上唯一 ID，打开事件流，监听服务端推送的事件就可以了
 

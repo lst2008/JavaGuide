@@ -1,8 +1,13 @@
 ---
 title: 程序员如何快速学习新技术
+description: "程序员如何快速学习新技术：围绕技术知识与面试总结梳理关键概念、常见问题与实践要点，帮助你高效学习与备战面试。"
 category: 技术文章精选集
 tag:
   - 练级攻略
+head:
+  - - meta
+    - name: keywords
+      content: 程序员学习,技术学习方法,快速学习,官方文档,技术面试,八股文,知行合一,学习技巧
 ---
 
 > **推荐语**：这是[《Java 面试指北》](https://javaguide.cn/zhuanlan/java-mian-shi-zhi-bei.html)练级攻略篇中的一篇文章，分享了我对于如何快速学习一门新技术的看法。

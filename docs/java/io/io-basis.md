@@ -1,9 +1,14 @@
 ---
 title: Java IO 基础知识总结
+description: Java IO基础知识全面总结：详解字节流与字符流区别、InputStream/OutputStream字节流、Reader/Writer字符流、缓冲流优化、文件读写操作。
 category: Java
 tag:
   - Java IO
   - Java基础
+head:
+  - - meta
+    - name: keywords
+      content: Java IO,字节流,字符流,InputStream,OutputStream,Reader,Writer,文件操作,缓冲流
 ---
 
 <!-- @include: @small-advertisement.snippet.md -->
@@ -151,7 +156,7 @@ dataOutputStream.writeBoolean(true);
 dataOutputStream.writeByte(1);
 ```
 
-`ObjectInputStream` 用于从输入流中读取 Java 对象（`ObjectInputStream`,反序列化），`ObjectOutputStream`将对象写入到输出流(`ObjectOutputStream`，序列化)。
+`ObjectInputStream` 用于从输入流中读取 Java 对象（反序列化），`ObjectOutputStream` 将对象写入到输出流（序列化）。
 
 ```java
 ObjectOutputStream output = new ObjectOutputStream(new FileOutputStream("file.txt")
@@ -430,7 +435,7 @@ class BufferedInputStream extends FilterInputStream {
 
 ### BufferedOutputStream（字节缓冲输出流）
 
-`BufferedOutputStream` 将数据（字节信息）写入到目的地（通常是文件）的过程中不会一个字节一个字节的写入，而是会先将要写入的字节存放在缓存区，并从内部缓冲区中单独写入字节。这样大幅减少了 IO 次数，提高了读取效率
+`BufferedOutputStream` 将数据（字节信息）写入到目的地（通常是文件）的过程中不会一个字节一个字节的写入，而是会先将要写入的字节存放在缓存区，并从内部缓冲区中单独写入字节。这样大幅减少了 IO 次数，提高了效率
 
 ```java
 try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream("output.txt"))) {

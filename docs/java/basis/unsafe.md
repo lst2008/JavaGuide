@@ -1,8 +1,13 @@
 ---
 title: Java 魔法类 Unsafe 详解
+description: 深入解析Java魔法类Unsafe：讲解Unsafe直接内存操作、CAS原子操作、对象实例化等底层能力，理解JUC并发工具类实现原理及使用风险。
 category: Java
 tag:
   - Java基础
+head:
+  - - meta
+    - name: keywords
+      content: Unsafe类,内存操作,CAS原子操作,堆外内存,直接内存,sun.misc.Unsafe,JUC底层实现
 ---
 
 > 本文整理完善自下面这两篇优秀的文章：
@@ -134,20 +139,34 @@ public native void freeMemory(long address);
 ```java
 private void memoryTest() {
     int size = 4;
-    long addr = unsafe.allocateMemory(size);
-    long addr3 = unsafe.reallocateMemory(addr, size * 2);
-    System.out.println("addr: "+addr);
-    System.out.println("addr3: "+addr3);
+    // 1. 分配初始内存
+    long oldAddr = unsafe.allocateMemory(size);
+    System.out.println("Initial address: " + oldAddr);
+
+    // 2. 向初始内存写入数据
+    unsafe.putInt(oldAddr, 16843009); // 写入 0x01010101
+    System.out.println("Value at oldAddr: " + unsafe.getInt(oldAddr));
+
+    // 3. 重新分配内存
+    long newAddr = unsafe.reallocateMemory(oldAddr, size * 2);
+    System.out.println("New address: " + newAddr);
+
+    // 4. reallocateMemory 已经将数据从 oldAddr 拷贝到 newAddr
+    // 所以 newAddr 的前4个字节应该和 oldAddr 的内容一样
+    System.out.println("Value at newAddr (first 4 bytes): " + unsafe.getInt(newAddr));
+
+    // 关键：之后所有操作都应该基于 newAddr，oldAddr 已失效！
     try {
-        unsafe.setMemory(null,addr ,size,(byte)1);
-        for (int i = 0; i < 2; i++) {
-            unsafe.copyMemory(null,addr,null,addr3+size*i,4);
-        }
-        System.out.println(unsafe.getInt(addr));
-        System.out.println(unsafe.getLong(addr3));
-    }finally {
-        unsafe.freeMemory(addr);
-        unsafe.freeMemory(addr3);
+        // 5. 在新内存块的后半部分写入新数据
+        unsafe.putInt(newAddr + size, 33686018); // 写入 0x02020202
+
+        // 6. 读取整个8字节的long值
+        System.out.println("Value at newAddr (full 8 bytes): " + unsafe.getLong(newAddr));
+
+    } finally {
+        // 7. 只释放最后有效的内存地址
+        unsafe.freeMemory(newAddr);
+        // 如果尝试 freeMemory(oldAddr)，将会导致 double free 错误！
     }
 }
 ```
@@ -155,34 +174,55 @@ private void memoryTest() {
 先看结果输出：
 
 ```plain
-addr: 2433733895744
-addr3: 2433733894944
-16843009
-72340172838076673
+Initial address: 140467048086752
+Value at oldAddr: 16843009
+New address: 140467048086752
+Value at newAddr (first 4 bytes): 16843009
+Value at newAddr (full 8 bytes): 144680345659310337
 ```
 
-分析一下运行结果，首先使用`allocateMemory`方法申请 4 字节长度的内存空间，调用`setMemory`方法向每个字节写入内容为`byte`类型的 1，当使用 Unsafe 调用`getInt`方法时，因为一个`int`型变量占 4 个字节，会一次性读取 4 个字节，组成一个`int`的值，对应的十进制结果为 16843009。
+`reallocateMemory` 的行为类似于 C 语言中的 realloc 函数，它会尝试在不移动数据的情况下扩展或收缩内存块。其行为主要有两种情况：
 
-你可以通过下图理解这个过程：
+1. **原地扩容**：如果当前内存块后面有足够的连续空闲空间，`reallocateMemory` 会直接在原地址上扩展内存，并返回原始地址。
+2. **异地扩容**：如果当前内存块后面空间不足，它会寻找一个新的、足够大的内存区域，将旧数据拷贝过去，然后释放旧的内存地址，并返回新地址。
 
-![](https://oss.javaguide.cn/github/javaguide/java/basis/unsafe/image-20220717144344005.png)
+**结合本次的运行结果，我们可以进行如下分析：**
 
-在代码中调用`reallocateMemory`方法重新分配了一块 8 字节长度的内存空间，通过比较`addr`和`addr3`可以看到和之前申请的内存地址是不同的。在代码中的第二个 for 循环里，调用`copyMemory`方法进行了两次内存的拷贝，每次拷贝内存地址`addr`开始的 4 个字节，分别拷贝到以`addr3`和`addr3+4`开始的内存空间上：
+**第一步：初始分配与写入**
 
-![](https://oss.javaguide.cn/github/javaguide/java/basis/unsafe/image-20220717144354582.png)
+- `unsafe.allocateMemory(size)` 分配了 4 字节的堆外内存，地址为 `140467048086752`。
+- `unsafe.putInt(oldAddr, 16843009)` 向该地址写入了 int 值 `16843009`，其十六进制表示为 `0x01010101`。`getInt` 读取正确，证明写入成功。
 
-拷贝完成后，使用`getLong`方法一次性读取 8 个字节，得到`long`类型的值为 72340172838076673。
+**第二步：原地内存扩容**
 
-需要注意，通过这种方式分配的内存属于 堆外内存 ，是无法进行垃圾回收的，需要我们把这些内存当做一种资源去手动调用`freeMemory`方法进行释放，否则会产生内存泄漏。通用的操作内存方式是在`try`中执行对内存的操作，最终在`finally`块中进行内存的释放。
+- `long newAddr = unsafe.reallocateMemory(oldAddr, size * 2)` 尝试将内存块扩容至 8 字节。
+- 观察输出 New address: `140467048086752`，我们发现 `newAddr` 与 `oldAddr` 的值**完全相同**。
+- 这表明本次操作触发了“原地扩容”。系统在原地址 `140467048086752` 后面找到了足够的空间，直接将内存块扩展到了 8 字节。在这个过程中，旧的地址 `oldAddr` 依然有效，并且就是 `newAddr`，数据也并未发生移动。
+
+**第三步：验证数据与写入新数据**
+
+- `unsafe.getInt(newAddr)` 再次读取前 4 个字节，结果仍是 `16843009`，验证了原数据完好无损。
+- `unsafe.putInt(newAddr + size, 33686018)` 在扩容出的后 4 个字节（偏移量为 4）写入了新的 int 值 `33686018`（十六进制为 `0x02020202`）。
+
+**第四步：读取完整数据**
+
+- `unsafe.getLong(newAddr)` 从起始地址读取一个 long 值（8 字节）。此时内存中的 8 字节内容为 `0x01010101` (低地址) 和 `0x02020202` (高地址) 的拼接。
+- 在小端字节序（Little-Endian）的机器上，这 8 字节在内存中会被解释为十六进制数 `0x0202020201010101`。
+- 这个十六进制数转换为十进制，结果正是 `144680345659310337`。这完美地解释了最终的输出结果。
+
+**第五步：安全的内存释放**
+
+- `finally` 块中，`unsafe.freeMemory(newAddr)` 安全地释放了整个 8 字节的内存块。
+- 由于本次是原地扩容（`oldAddr == newAddr`），所以即使错误地多写一句 `freeMemory(oldAddr)` 也会导致二次释放的严重错误。
+
+#### 典型应用
+
+`DirectByteBuffer` 是 Java 用于实现堆外内存的一个重要类，通常用在通信过程中做缓冲池，如在 Netty、MINA 等 NIO 框架中应用广泛。`DirectByteBuffer` 对于堆外内存的创建、使用、销毁等逻辑均由 Unsafe 提供的堆外内存 API 来实现。
 
 **为什么要使用堆外内存？**
 
 - 对垃圾回收停顿的改善。由于堆外内存是直接受操作系统管理而不是 JVM，所以当我们使用堆外内存时，即可保持较小的堆内内存规模。从而在 GC 时减少回收停顿对于应用的影响。
 - 提升程序 I/O 操作的性能。通常在 I/O 通信过程中，会存在堆内内存到堆外内存的数据拷贝操作，对于需要频繁进行内存间数据拷贝且生命周期较短的暂存数据，都建议存储到堆外内存。
-
-#### 典型应用
-
-`DirectByteBuffer` 是 Java 用于实现堆外内存的一个重要类，通常用在通信过程中做缓冲池，如在 Netty、MINA 等 NIO 框架中应用广泛。`DirectByteBuffer` 对于堆外内存的创建、使用、销毁等逻辑均由 Unsafe 提供的堆外内存 API 来实现。
 
 下图为 `DirectByteBuffer` 构造函数，创建 `DirectByteBuffer` 的时候，通过 `Unsafe.allocateMemory` 分配内存、`Unsafe.setMemory` 进行内存初始化，而后构建 `Cleaner` 对象用于跟踪 `DirectByteBuffer` 对象的垃圾回收，以实现当 `DirectByteBuffer` 被垃圾回收时，分配的堆外内存一起被释放。
 
@@ -516,11 +556,94 @@ private void increment(int x){
 1 2 3 4 5 6 7 8 9
 ```
 
-在上面的例子中，使用两个线程去修改`int`型属性`a`的值，并且只有在`a`的值等于传入的参数`x`减一时，才会将`a`的值变为`x`，也就是实现对`a`的加一的操作。流程如下所示：
+如果你把上面这段代码贴到 IDE 中运行，会发现并不能得到目标输出结果。有朋友已经在 Github 上指出了这个问题：[issue#2650](https://github.com/Snailclimb/JavaGuide/issues/2650)。下面是修正后的代码：
+
+```java
+private volatile int a = 0; // 共享变量，初始值为 0
+private static final Unsafe unsafe;
+private static final long fieldOffset;
+
+static {
+    try {
+        // 获取 Unsafe 实例
+        Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
+        theUnsafe.setAccessible(true);
+        unsafe = (Unsafe) theUnsafe.get(null);
+        // 获取 a 字段的内存偏移量
+        fieldOffset = unsafe.objectFieldOffset(CasTest.class.getDeclaredField("a"));
+    } catch (Exception e) {
+        throw new RuntimeException("Failed to initialize Unsafe or field offset", e);
+    }
+}
+
+public static void main(String[] args) {
+    CasTest casTest = new CasTest();
+
+    Thread t1 = new Thread(() -> {
+        for (int i = 1; i <= 4; i++) {
+            casTest.incrementAndPrint(i);
+        }
+    });
+
+    Thread t2 = new Thread(() -> {
+        for (int i = 5; i <= 9; i++) {
+            casTest.incrementAndPrint(i);
+        }
+    });
+
+    t1.start();
+    t2.start();
+
+    // 等待线程结束，以便观察完整输出 (可选，用于演示)
+    try {
+        t1.join();
+        t2.join();
+    } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+    }
+}
+
+// 将递增和打印操作封装在一个原子性更强的方法内
+private void incrementAndPrint(int targetValue) {
+    while (true) {
+        int currentValue = a; // 读取当前 a 的值
+        // 只有当 a 的当前值等于目标值的前一个值时，才尝试更新
+        if (currentValue == targetValue - 1) {
+            if (unsafe.compareAndSwapInt(this, fieldOffset, currentValue, targetValue)) {
+                // CAS 成功，说明成功将 a 更新为 targetValue
+                System.out.print(targetValue + " ");
+                break; // 成功更新并打印后退出循环
+            }
+            // 如果 CAS 失败，意味着在读取 currentValue 和执行 CAS 之间，a 的值被其他线程修改了，
+            // 此时 currentValue 已经不是 a 的最新值，需要重新读取并重试。
+        }
+        // 如果 currentValue != targetValue - 1，说明还没轮到当前线程更新，
+        // 或者已经被其他线程更新超过了，让出CPU给其他线程机会。
+        // 对于严格顺序递增的场景，如果 current > targetValue - 1，可能意味着逻辑错误或死循环，
+        // 但在此示例中，我们期望线程能按顺序执行。
+        Thread.yield(); // 提示CPU调度器可以切换线程，减少无效自旋
+    }
+}
+```
+
+在上述例子中，我们创建了两个线程，它们都尝试修改共享变量 a。每个线程在调用 `incrementAndPrint(targetValue)` 方法时：
+
+1. 会先读取 a 的当前值 `currentValue`。
+2. 检查 `currentValue` 是否等于 `targetValue - 1` (即期望的前一个值)。
+3. 如果条件满足，则调用`unsafe.compareAndSwapInt()` 尝试将 `a` 从 `currentValue` 更新到 `targetValue`。
+4. 如果 CAS 操作成功（返回 true），则打印 `targetValue` 并退出循环。
+5. 如果 CAS 操作失败，或者 `currentValue` 不满足条件，则当前线程会继续循环（自旋），并通过 `Thread.yield()` 尝试让出 CPU，直到成功更新并打印或者条件满足。
+
+这种机制确保了每个数字（从 1 到 9）只会被成功设置并打印一次，并且是按顺序进行的。
 
 ![](https://oss.javaguide.cn/github/javaguide/java/basis/unsafe/image-20220717144939826.png)
 
-需要注意的是，在调用`compareAndSwapInt`方法后，会直接返回`true`或`false`的修改结果，因此需要我们在代码中手动添加自旋的逻辑。在`AtomicInteger`类的设计中，也是采用了将`compareAndSwapInt`的结果作为循环条件，直至修改成功才退出死循环的方式来实现的原子性的自增操作。
+需要注意的是：
+
+1. **自旋逻辑：** `compareAndSwapInt` 方法本身只执行一次比较和交换操作，并立即返回结果。因此，为了确保操作最终成功（在值符合预期的情况下），我们需要在代码中显式地实现自旋逻辑（如 `while(true)` 循环），不断尝试直到 CAS 操作成功。
+2. **`AtomicInteger` 的实现：** JDK 中的 `java.util.concurrent.atomic.AtomicInteger` 类内部正是利用了类似的 CAS 操作和自旋逻辑来实现其原子性的 `getAndIncrement()`, `compareAndSet()` 等方法。直接使用 `AtomicInteger` 通常是更安全、更推荐的做法，因为它封装了底层的复杂性。
+3. **ABA 问题：** CAS 操作本身存在 ABA 问题（一个值从 A 变为 B，再变回 A，CAS 检查时会认为值没有变过）。在某些场景下，如果值的变化历史很重要，可能需要使用 `AtomicStampedReference` 来解决。但在本例的简单递增场景中，ABA 问题通常不构成影响。
+4. **CPU 消耗：** 长时间的自旋会消耗 CPU 资源。在竞争激烈或条件长时间不满足的情况下，可以考虑加入更复杂的退避策略（如 `Thread.sleep()` 或 `LockSupport.parkNanos()`）来优化。
 
 ### 线程调度
 

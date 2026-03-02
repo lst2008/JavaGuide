@@ -1,8 +1,13 @@
 ---
 title: JVM线上问题排查和性能调优案例
+description: 汇集 JVM 在生产中的问题排查与优化案例，涵盖内存与 GC、工具使用等。
 category: Java
 tag:
   - JVM
+head:
+  - - meta
+    - name: keywords
+      content: JVM 实战,线上排查,性能调优,内存分析,GC 优化,工具
 ---
 
 JVM 线上问题排查和性能调优也是面试常问的一个问题，尤其是社招中大厂的面试。

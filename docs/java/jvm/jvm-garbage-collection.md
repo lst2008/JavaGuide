@@ -1,8 +1,13 @@
 ---
 title: JVM垃圾回收详解（重点）
+description: JVM垃圾回收详解：全面讲解GC算法（标记清除、复制、标记整理）、分代回收机制、常用垃圾回收器（Serial、Parallel、CMS、G1、ZGC）、GC调优实践。
 category: Java
 tag:
   - JVM
+head:
+  - - meta
+    - name: keywords
+      content: JVM垃圾回收,GC算法,垃圾回收器,分代回收,标记清除,复制算法,G1 GC,ZGC,GC调优
 ---
 
 > 如果没有特殊说明，都是针对的是 HotSpot 虚拟机。
@@ -253,29 +258,72 @@ public class ReferenceCountingGc {
 
 JDK1.2 之前，Java 中引用的定义很传统：如果 reference 类型的数据存储的数值代表的是另一块内存的起始地址，就称这块内存代表一个引用。
 
-JDK1.2 以后，Java 对引用的概念进行了扩充，将引用分为强引用、软引用、弱引用、虚引用四种（引用强度逐渐减弱）
+JDK1.2 以后，Java 对引用的概念进行了扩充，将引用分为强引用、软引用、弱引用、虚引用四种（引用强度逐渐减弱），强引用就是 Java 中普通的对象，而软引用、弱引用、虚引用在 JDK 中定义的类分别是 `SoftReference`、`WeakReference`、`PhantomReference`。
 
 ![Java 引用类型总结](https://oss.javaguide.cn/github/javaguide/java/jvm/java-reference-type.png)
 
 **1．强引用（StrongReference）**
 
-以前我们使用的大部分引用实际上都是强引用，这是使用最普遍的引用。如果一个对象具有强引用，那就类似于**必不可少的生活用品**，垃圾回收器绝不会回收它。当内存空间不足，Java 虚拟机宁愿抛出 OutOfMemoryError 错误，使程序异常终止，也不会靠随意回收具有强引用的对象来解决内存不足问题。
+强引用实际上就是程序代码中普遍存在的引用赋值，这是使用最普遍的引用，其代码如下
+
+```java
+String strongReference = new String("abc");
+```
+
+如果一个对象具有强引用，那就类似于**必不可少的生活用品**，垃圾回收器绝不会回收它。当内存空间不足，Java 虚拟机宁愿抛出 OutOfMemoryError 错误，使程序异常终止，也不会靠随意回收具有强引用的对象来解决内存不足问题。
 
 **2．软引用（SoftReference）**
 
-如果一个对象只具有软引用，那就类似于**可有可无的生活用品**。如果内存空间足够，垃圾回收器就不会回收它，如果内存空间不足了，就会回收这些对象的内存。只要垃圾回收器没有回收它，该对象就可以被程序使用。软引用可用来实现内存敏感的高速缓存。
+如果一个对象只具有软引用，那就类似于**可有可无的生活用品**。软引用代码如下
+
+```java
+// --- 示例1 ---
+String str = new String("abc");
+SoftReference<String> softReference1 = new SoftReference<>(str);
+str = null; // 去掉强引用
+
+// --- 示例2 ---
+SoftReference<String> softReference2 = new SoftReference<>(new String("def")); // 匿名对象
+```
+
+软引用对象在内存压力较大时可能会被回收，但JVM不保证只在内存不足时才清理。唯一强保证是：在抛出 OutOfMemoryError 之前，所有仅被软引用可达的对象一定会被清理。只要垃圾回收器没有回收它，该对象就可以被程序使用。软引用可用来实现内存敏感的高速缓存。
 
 软引用可以和一个引用队列（ReferenceQueue）联合使用，如果软引用所引用的对象被垃圾回收，JAVA 虚拟机就会把这个软引用加入到与之关联的引用队列中。
 
 **3．弱引用（WeakReference）**
 
-如果一个对象只具有弱引用，那就类似于**可有可无的生活用品**。弱引用与软引用的区别在于：只具有弱引用的对象拥有更短暂的生命周期。在垃圾回收器线程扫描它所管辖的内存区域的过程中，一旦发现了只具有弱引用的对象，不管当前内存空间足够与否，都会回收它的内存。不过，由于垃圾回收器是一个优先级很低的线程， 因此不一定会很快发现那些只具有弱引用的对象。
+如果一个对象只具有弱引用，那就类似于**可有可无的生活用品**。弱引用代码如下：
+
+```java
+// --- 示例1 ---
+String str = new String("abc");
+WeakReference<String> weakReference1 = new WeakReference<>(str);
+str = null; //去除强引用
+
+// --- 示例2 ---
+WeakReference<String> weakReference2 = new WeakReference<>(new String("abc")); // 匿名对象
+```
+
+
+弱引用与软引用的区别在于：只具有弱引用的对象拥有更短暂的生命周期。在垃圾回收器线程扫描它所管辖的内存区域的过程中，一旦发现了只具有弱引用的对象，不管当前内存空间足够与否，都会回收它的内存。不过，由于垃圾回收器是一个优先级很低的线程， 因此不一定会很快发现那些只具有弱引用的对象。
 
 弱引用可以和一个引用队列（ReferenceQueue）联合使用，如果弱引用所引用的对象被垃圾回收，Java 虚拟机就会把这个弱引用加入到与之关联的引用队列中。
 
 **4．虚引用（PhantomReference）**
 
-"虚引用"顾名思义，就是形同虚设，与其他几种引用都不同，虚引用并不会决定对象的生命周期。如果一个对象仅持有虚引用，那么它就和没有任何引用一样，在任何时候都可能被垃圾回收。
+"虚引用"顾名思义，就是形同虚设，与其他几种引用都不同，虚引用并不会决定对象的生命周期。如果一个对象仅持有虚引用，那么它就和没有任何引用一样，在任何时候都可能被垃圾回收。虚引用代码如下：
+
+```java
+// --- 示例1 ---
+String str = new String("abc");
+ReferenceQueue queue = new ReferenceQueue();
+// 创建虚引用，要求必须与一个引用队列关联
+PhantomReference phantomReference1 = new PhantomReference(str, queue);
+str = null; // 去除强引用
+
+// --- 示例2 ---
+PhantomReference phantomReference2 = new PhantomReference(new String("abc"), queue); // 匿名对象
+```
 
 **虚引用主要用来跟踪对象被垃圾回收的活动**。
 
@@ -492,7 +540,7 @@ G1 收集器的运作大致分为以下几个步骤：
 
 ### ZGC 收集器
 
-与 CMS 中的 ParNew 和 G1 类似，ZGC 也采用标记-复制算法，不过 ZGC 对该算法做了重大改进。
+与 ParNew 和 G1 类似，ZGC 也采用标记-复制算法，不过 ZGC 对该算法做了重大改进。
 
 ZGC 可以将暂停时间控制在几毫秒以内，且暂停时间不受堆内存大小的影响，出现 Stop The World 的情况会更少，但代价是牺牲了一些吞吐量。ZGC 最大支持 16TB 的堆内存。
 

@@ -1,8 +1,13 @@
 ---
 title: Java集合使用注意事项总结
+description: Java集合使用注意事项总结：基于阿里巴巴开发手册梳理集合判空、Arrays.asList陷阱、subList问题、并发容器选择等最佳实践，避免常见错误。
 category: Java
 tag:
   - Java集合
+head:
+  - - meta
+    - name: keywords
+      content: Java集合最佳实践,集合判空,Arrays.asList,subList,并发容器,集合使用注意事项,性能优化
 ---
 
 这篇文章我根据《阿里巴巴 Java 开发手册》总结了关于集合使用常见的注意事项以及其具体原理。
@@ -134,6 +139,8 @@ public static <T> T requireNonNull(T obj) {
     return obj;
 }
 ```
+
+> `Collectors`也提供了无需 mergeFunction 的`toMap()`方法，但此时若出现 key 冲突，则会抛出`duplicateKeyException`异常，因此强烈建议使用`toMap()`方法必填 mergeFunction。
 
 ## 集合遍历
 

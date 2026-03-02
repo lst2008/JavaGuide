@@ -1,8 +1,13 @@
 ---
 title: Redis内存碎片详解
+description: 深入解析Redis内存碎片产生的原因、判断方法和优化方案，包括内存碎片率计算、jemalloc分配器原理、自动内存碎片清理配置等。
 category: 数据库
 tag:
   - Redis
+head:
+  - - meta
+    - name: keywords
+      content: Redis内存碎片,内存碎片率,jemalloc,内存分配,activedefrag,内存优化,Redis内存管理
 ---
 
 ## 什么是内存碎片?

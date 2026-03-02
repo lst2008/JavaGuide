@@ -1,9 +1,14 @@
 ---
 title: SQL常见面试题总结（1）
+description: SQL常见面试题总结第一篇，涵盖SELECT检索数据、WHERE条件过滤、ORDER BY排序、DISTINCT去重、LIMIT分页等基础查询操作及牛客真题解析。
 category: 数据库
 tag:
   - 数据库基础
   - SQL
+head:
+  - - meta
+    - name: keywords
+      content: SQL面试题,SELECT查询,WHERE条件,ORDER BY排序,DISTINCT去重,LIMIT分页,SQL基础
 ---
 
 > 题目来源于：[牛客题霸 - SQL 必知必会](https://www.nowcoder.com/exam/oj?page=1&tab=SQL%E7%AF%87&topicId=298)

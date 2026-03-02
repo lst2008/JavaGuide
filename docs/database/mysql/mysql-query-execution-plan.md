@@ -1,15 +1,13 @@
 ---
 title: MySQL执行计划分析
+description: 详解MySQL EXPLAIN执行计划的各列含义，包括id、select_type、type、key、rows、Extra等关键字段解读，帮助你分析SQL性能瓶颈并进行针对性优化。
 category: 数据库
 tag:
   - MySQL
 head:
   - - meta
     - name: keywords
-      content: MySQL基础,MySQL执行计划,EXPLAIN,查询优化器
-  - - meta
-    - name: description
-      content: 执行计划是指一条 SQL 语句在经过MySQL 查询优化器的优化会后，具体的执行方式。优化 SQL 的第一步应该是读懂 SQL 的执行计划。
+      content: MySQL执行计划,EXPLAIN,查询优化器,SQL性能分析,索引命中,type访问类型,Extra字段,慢查询优化
 ---
 
 > 本文来自公号 MySQL 技术，JavaGuide 对其做了补充完善。原文地址：<https://mp.weixin.qq.com/s/d5OowNLtXBGEAbT31sSH4g>
@@ -89,8 +87,8 @@ id 如果相同，从上往下依次执行。id 不同，id 值越大，执行�
 查询用到的表名，每行都有对应的表名，表名除了正常的表之外，也可能是以下列出的值：
 
 - **`<unionM,N>`** : 本行引用了 id 为 M 和 N 的行的 UNION 结果；
-- **`<derivedN>`** : 本行引用了 id 为 N 的表所产生的的派生表结果。派生表有可能产生自 FROM 语句中的子查询。
-- **`<subqueryN>`** : 本行引用了 id 为 N 的表所产生的的物化子查询结果。
+- **`<derivedN>`** : 本行引用了 id 为 N 的表所产生的派生表结果。派生表有可能产生自 FROM 语句中的子查询。
+- **`<subqueryN>`** : 本行引用了 id 为 N 的表所产生的物化子查询结果。
 
 ### type（重要）
 
@@ -111,7 +109,7 @@ system > const > eq_ref > ref > fulltext > ref_or_null > index_merge > unique_su
 
 ### possible_keys
 
-possible_keys 列表示 MySQL 执行查询时可能用到的索引。如果这一列为 NULL ，则表示没有可能用到的索引；这种情况下，需要检查 WHERE 语句中所使用的的列，看是否可以通过给这些列中某个或多个添加索引的方法来提高查询性能。
+possible_keys 列表示 MySQL 执行查询时可能用到的索引。如果这一列为 NULL ，则表示没有可能用到的索引；这种情况下，需要检查 WHERE 语句中所使用的列，看是否可以通过给这些列中某个或多个添加索引的方法来提高查询性能。
 
 ### key（重要）
 

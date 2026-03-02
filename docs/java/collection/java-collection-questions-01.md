@@ -1,15 +1,13 @@
 ---
 title: Java集合常见面试题总结(上)
+description: Java集合框架面试题总结：深入解析Collection/List/Set/Queue接口，对比ArrayList/LinkedList/HashMap等常用集合类，掌握集合底层数据结构与使用场景。
 category: Java
 tag:
   - Java集合
 head:
   - - meta
     - name: keywords
-      content: Collection,List,Set,Queue,Deque,PriorityQueue
-  - - meta
-    - name: description
-      content: Java集合常见知识点和面试题总结，希望对你有帮助！
+      content: Java集合,Collection,List,Set,Queue,ArrayList,LinkedList,HashMap,集合框架,Java面试题
 ---
 
 <!-- @include: @small-advertisement.snippet.md -->
@@ -28,7 +26,7 @@ Java 集合框架如下图所示：
 
 注：图中只列举了主要的继承派生关系，并没有列举所有关系。比方省略了`AbstractList`, `NavigableSet`等抽象类以及其他的一些辅助类，如想深入了解，可自行查看源码。
 
-### 说说 List, Set, Queue, Map 四者的区别？
+### ⭐️说说 List, Set, Queue, Map 四者的区别？
 
 - `List`(对付顺序的好帮手): 存储的元素是有序的、可重复的。
 - `Set`(注重独一无二的性质): 存储的元素不可重复的。
@@ -79,7 +77,7 @@ Java 集合框架如下图所示：
 
 ## List
 
-### ArrayList 和 Array（数组）的区别？
+### ⭐️ArrayList 和 Array（数组）的区别？
 
 `ArrayList` 内部基于动态数组实现，比 `Array`（静态数组） 使用起来更加灵活：
 
@@ -154,7 +152,7 @@ System.out.println(listOfStrings);
 [null, java]
 ```
 
-### ArrayList 插入和删除元素的时间复杂度？
+### ⭐️ArrayList 插入和删除元素的时间复杂度？
 
 对于插入：
 
@@ -188,13 +186,13 @@ System.out.println(listOfStrings);
   0   1   2   3   4   5   6   7   8   9
 ```
 
-### LinkedList 插入和删除元素的时间复杂度？
+### ⭐️LinkedList 插入和删除元素的时间复杂度？
 
 - 头部插入/删除：只需要修改头结点的指针即可完成插入/删除操作，因此时间复杂度为 O(1)。
 - 尾部插入/删除：只需要修改尾结点的指针即可完成插入/删除操作，因此时间复杂度为 O(1)。
 - 指定位置插入/删除：需要先移动到指定位置，再修改指定节点的指针完成插入/删除，不过由于有头尾指针，可以从较近的指针出发，因此需要遍历平均 n/4 个元素，时间复杂度为 O(n)。
 
-这里简单列举一个例子：假如我们要删除节点 9 的话，需要先遍历链表找到该节点。然后，再执行相应节点指针指向的更改，具体的源码可以参考：[LinkedList 源码分析](./linkedlist-source-code.md) 。
+这里简单列举一个例子：假如我们要删除节点 9 的话，需要先遍历链表找到该节点。然后，再执行相应节点指针指向的更改，具体的源码可以参考：[LinkedList 源码分析](https://javaguide.cn/java/collection/linkedlist-source-code.html) 。
 
 ![unlink 方法逻辑](https://oss.javaguide.cn/github/javaguide/java/collection/linkedlist-unlink.jpg)
 
@@ -202,7 +200,7 @@ System.out.println(listOfStrings);
 
 `RandomAccess` 是一个标记接口，用来表明实现该接口的类支持随机访问（即可以通过索引快速访问元素）。由于 `LinkedList` 底层数据结构是链表，内存地址不连续，只能通过指针来定位，不支持随机快速访问，所以不能实现 `RandomAccess` 接口。
 
-### ArrayList 与 LinkedList 区别?
+### ⭐️ArrayList 与 LinkedList 区别?
 
 - **是否保证线程安全：** `ArrayList` 和 `LinkedList` 都是不同步的，也就是不保证线程安全；
 - **底层数据结构：** `ArrayList` 底层使用的是 **`Object` 数组**；`LinkedList` 底层使用的是 **双向链表** 数据结构（JDK1.6 之前为循环链表，JDK1.7 取消了循环。注意双向链表和双向循环链表的区别，下面有介绍到！）
@@ -251,11 +249,13 @@ public interface RandomAccess {
 
 `ArrayList` 实现了 `RandomAccess` 接口， 而 `LinkedList` 没有实现。为什么呢？我觉得还是和底层数据结构有关！`ArrayList` 底层是数组，而 `LinkedList` 底层是链表。数组天然支持随机访问，时间复杂度为 O(1)，所以称为快速随机访问。链表需要遍历到特定位置才能访问特定位置的元素，时间复杂度为 O(n)，所以不支持快速随机访问。`ArrayList` 实现了 `RandomAccess` 接口，就表明了他具有快速随机访问功能。 `RandomAccess` 接口只是标识，并不是说 `ArrayList` 实现 `RandomAccess` 接口才具有快速随机访问功能的！
 
-### 说一说 ArrayList 的扩容机制吧
+### ⭐️说一说 ArrayList 的扩容机制吧
 
-详见笔主的这篇文章: [ArrayList 扩容机制分析](https://javaguide.cn/java/collection/arraylist-source-code.html#_3-1-%E5%85%88%E4%BB%8E-arraylist-%E7%9A%84%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0%E8%AF%B4%E8%B5%B7)。
+详见笔主的这篇文章: [ArrayList 扩容机制分析](https://javaguide.cn/java/collection/arraylist-source-code.html#arraylist-扩容机制分析)。
 
-### 说说集合中的 fail-fast 和 fail-safe 是什么
+### ⭐️集合中的 fail-fast 和 fail-safe 是什么？
+
+`fail-fast`（快速失败）和 `fail-safe`（安全失败）是Java集合框架在处理并发修改问题时，两种截然不同的设计哲学和容错策略。
 
 关于`fail-fast`引用`medium`中一篇文章关于`fail-fast`和`fail-safe`的说法：
 
@@ -263,43 +263,67 @@ public interface RandomAccess {
 
 快速失败的思想即针对可能发生的异常进行提前表明故障并停止运行，通过尽早的发现和停止错误，降低故障系统级联的风险。
 
-在`java.util`包下的大部分集合是不支持线程安全的，为了能够提前发现并发操作导致线程安全风险，提出通过维护一个`modCount`记录修改的次数，迭代期间通过比对预期修改次数`expectedModCount`和`modCount`是否一致来判断是否存在并发操作，从而实现快速失败，由此保证在避免在异常时执行非必要的复杂代码。
+在`java.util`包下的大部分集合（如 `ArrayList`, `HashMap`）是不支持线程安全的，为了能够提前发现并发操作导致线程安全风险，提出通过维护一个`modCount`记录修改的次数，迭代期间通过比对预期修改次数`expectedModCount`和`modCount`是否一致来判断是否存在并发操作，从而实现快速失败，由此保证在避免在异常时执行非必要的复杂代码。
 
-对应的我们给出下面这样一段在示例，我们首先插入`100`个操作元素，一个线程迭代元素，一个线程删除元素，最终输出结果如愿抛出`ConcurrentModificationException`：
+**ArrayList (fail-fast) 示例：**
 
 ```java
-// 使用线程安全的 CopyOnWriteArrayList 避免 ConcurrentModificationException
-List<Integer> list = new CopyOnWriteArrayList<>();
-CountDownLatch countDownLatch = new CountDownLatch(2);
+     // 使用线程不安全的 ArrayList，它是一种 fail-fast 集合
+      List<Integer> list = new ArrayList<>();
+      CountDownLatch latch = new CountDownLatch(2);
 
-// 添加元素
-for (int i = 0; i < 100; i++) {
-    list.add(i);
-}
+      for (int i = 0; i < 5; i++) {
+          list.add(i);
+      }
+      System.out.println("Initial list: " + list);
 
-Thread t1 = new Thread(() -> {
-    // 迭代元素 (注意：Integer 是不可变的，这里的 i++ 不会修改 list 中的值)
-    for (Integer i : list) {
-        i++; // 这行代码实际上没有修改list中的元素
-    }
-    countDownLatch.countDown();
-});
+      Thread t1 = new Thread(() -> {
+          try {
+              for (Integer i : list) {
+                  System.out.println("Iterator Thread (t1) sees: " + i);
+                  Thread.sleep(100);
+              }
+          } catch (ConcurrentModificationException e) {
+              System.err.println("!!! Iterator Thread (t1) caught ConcurrentModificationException as expected.");
+          } catch (InterruptedException e) {
+              e.printStackTrace();
+          } finally {
+              latch.countDown();
+          }
+      });
 
-Thread t2 = new Thread(() -> {
-    System.out.println("删除元素1");
-    list.remove(Integer.valueOf(1)); // 使用 Integer.valueOf(1) 删除指定值的对象
-    countDownLatch.countDown();
-});
+      Thread t2 = new Thread(() -> {
+          try {
+              Thread.sleep(50);
+              System.out.println("-> Modifier Thread (t2) is removing element 1...");
+              list.remove(Integer.valueOf(1));
+              System.out.println("-> Modifier Thread (t2) finished removal.");
+          } catch (InterruptedException e) {
+              e.printStackTrace();
+          } finally {
+              latch.countDown();
+          }
+      });
 
-t1.start();
-t2.start();
-countDownLatch.await();
+      t1.start();
+      t2.start();
+      latch.await();
+
+      System.out.println("Final list state: " + list);
 ```
 
-我们在初始化时插入了`100`个元素，此时对应的修改`modCount`次数为`100`，随后线程 2 在线程 1 迭代期间进行元素删除操作，此时对应的`modCount`就变为`101`。
-线程 1 在随后`foreach`第 2 轮循环发现`modCount` 为`101`，与预期的`expectedModCount(值为100因为初始化插入了元素100个)`不等，判定为并发操作异常，于是便快速失败，抛出`ConcurrentModificationException`：
+输出：
 
-![](https://oss.javaguide.cn/github/javaguide/java/collection/fail-fast-and-fail-safe-insert-100-values.png)
+```
+Initial list: [0, 1, 2, 3, 4]
+Iterator Thread (t1) sees: 0
+-> Modifier Thread (t2) is removing element 1...
+-> Modifier Thread (t2) finished removal.
+!!! Iterator Thread (t1) caught ConcurrentModificationException as expected.
+Final list state: [0, 2, 3, 4]
+```
+
+程序在线程 t2 修改列表后，线程 t1 的下一次迭代操作立刻就抛出了 `ConcurrentModificationException`。这是因为 ArrayList 的迭代器在每次 `next()` 调用时，都会检查 `modCount` 是否被改变。一旦发现集合在迭代器不知情的情况下被修改，它会立即“快速失败”，以防止在不一致的数据上继续操作导致不可预期的后果。
 
 对此我们也给出`for`循环底层迭代器获取下一个元素时的`next`方法，可以看到其内部的`checkForComodification`具有针对修改次数比对的逻辑：
 
@@ -324,7 +348,7 @@ final void checkForComodification() {
 
 > Fail-safe systems take a different approach, aiming to recover and continue even in the face of unexpected conditions. This makes them particularly suited for uncertain or volatile environments.
 
-该思想常运用于并发容器，最经典的实现就是`CopyOnWriteArrayList`的实现，通过写时复制的思想保证在进行修改操作时复制出一份快照，基于这份快照完成添加或者删除操作后，将`CopyOnWriteArrayList`底层的数组引用指向这个新的数组空间，由此避免迭代时被并发修改所干扰所导致并发操作安全问题，当然这种做法也存缺点即进行遍历操作时无法获得实时结果：
+该思想常运用于并发容器，最经典的实现就是`CopyOnWriteArrayList`的实现，通过写时复制（Copy-On-Write）的思想保证在进行修改操作时复制出一份快照，基于这份快照完成添加或者删除操作后，将`CopyOnWriteArrayList`底层的数组引用指向这个新的数组空间，由此避免迭代时被并发修改所干扰所导致并发操作安全问题，当然这种做法也存在缺点，即进行遍历操作时无法获得实时结果：
 
 ![](https://oss.javaguide.cn/github/javaguide/java/collection/fail-fast-and-fail-safe-copyonwritearraylist.png)
 
@@ -579,7 +603,7 @@ Java 中常用的阻塞队列实现类有以下几种：
 
 日常开发中，这些队列使用的其实都不多，了解即可。
 
-### ArrayBlockingQueue 和 LinkedBlockingQueue 有什么区别？
+### ⭐️ArrayBlockingQueue 和 LinkedBlockingQueue 有什么区别？
 
 `ArrayBlockingQueue` 和 `LinkedBlockingQueue` 是 Java 并发包中常用的两种阻塞队列实现，它们都是线程安全的。不过，不过它们之间也存在下面这些区别：
 

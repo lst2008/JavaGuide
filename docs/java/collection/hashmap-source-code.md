@@ -1,8 +1,13 @@
 ---
 title: HashMap 源码分析
+description: HashMap源码深度剖析：详解JDK1.7/1.8结构差异、hash扰动函数、0.75负载因子、扩容rehash机制、链表转红黑树阈值等HashMap核心原理。
 category: Java
 tag:
   - Java集合
+head:
+  - - meta
+    - name: keywords
+      content: HashMap源码,哈希表,红黑树,链表,扰动函数,负载因子,HashMap扩容,哈希冲突,JDK1.8优化
 ---
 
 <!-- @include: @article-header.snippet.md -->
@@ -27,7 +32,7 @@ JDK1.8 之前 HashMap 底层是 **数组和链表** 结合在一起使用也就�
 
 HashMap 通过 key 的 hashCode 经过扰动函数处理过后得到 hash 值，然后通过 `(n - 1) & hash` 判断当前元素存放的位置（这里的 n 指的是数组的长度），如果当前位置存在元素的话，就判断该元素与要存入的元素的 hash 值以及 key 是否相同，如果相同的话，直接覆盖，不相同就通过拉链法解决冲突。
 
-所谓扰动函数指的就是 HashMap 的 hash 方法。使用 hash 方法也就是扰动函数是为了防止一些实现比较差的 hashCode() 方法 换句话说使用扰动函数之后可以减少碰撞。
+所谓扰动函数指的就是 HashMap 的 hash 方法。使用 hash 方法也就是扰动函数是为了防止一些实现比较差的 hashCode() 方法，换句话说使用扰动函数之后可以减少碰撞。
 
 **JDK 1.8 HashMap 的 hash 方法源码:**
 
@@ -217,7 +222,9 @@ HashMap 中有四个构造方法，它们分别如下：
      }
 ```
 
-> 值得注意的是上述四个构造方法中，都初始化了负载因子 loadFactor，由于 HashMap 中没有 capacity 这样的字段，即使指定了初始化容量 initialCapacity ，也只是通过 tableSizeFor 将其扩容到与 initialCapacity 最接近的 2 的幂次方大小，然后暂时赋值给 threshold ，后续通过 resize 方法将 threshold 赋值给 newCap 进行 table 的初始化。
+> 需要特别注意的是：传入的 `initialCapacity` 并不是最终的数组容量。`HashMap` 会调用 `tableSizeFor()` 将其**向上取整为大于或等于该值的最小 2 的幂次方**，并暂时保存到 `threshold` 字段。真正的 `table` 数组会在第一次扩容（`resize()`）时才初始化为这个大小。
+>
+> 例如：`initialCapacity = 9` → `threshold = 16` → `table` 长度最终为 16。
 
 **putMapEntries 方法：**
 

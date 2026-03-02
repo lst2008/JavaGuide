@@ -1,15 +1,13 @@
 ---
 title: Java基础常见面试题总结(上)
 category: Java
+description: Java基础常见面试题总结：包含Java语言特点、JVM/JDK/JRE区别、字节码详解、基本数据类型、自动装箱拆箱、方法重载与重写等核心知识点，助力Java开发者面试通关。
 tag:
   - Java基础
 head:
   - - meta
     - name: keywords
-      content: JVM,JDK,JRE,字节码详解,Java 基本数据类型,装箱和拆箱
-  - - meta
-    - name: description
-      content: 全网质量最高的Java基础常见知识点和面试题总结，希望对你有帮助！
+      content: Java基础,JVM,JDK,JRE,Java SE,字节码,Java编译,自动装箱,基本数据类型,方法重载,Java面试题
 ---
 
 <!-- @include: @small-advertisement.snippet.md -->
@@ -20,8 +18,8 @@ head:
 
 1. 简单易学（语法简单，上手容易）；
 2. 面向对象（封装，继承，多态）；
-3. 平台无关性（ Java 虚拟机实现平台无关性）；
-4. 支持多线程（ C++ 语言没有内置的多线程机制，因此必须调用操作系统的多线程功能来进行多线程程序设计，而 Java 语言却提供了多线程支持）；
+3. 平台无关性（Java 虚拟机实现平台无关性）；
+4. 支持多线程（C++ 语言没有内置的多线程机制，因此必须调用操作系统的多线程功能来进行多线程程序设计，而 Java 语言却提供了多线程支持）；
 5. 可靠性（具备异常处理和自动内存管理机制）；
 6. 安全性（Java 语言本身的设计就提供了多重安全防护机制如访问权限修饰符、限制程序直接访问操作系统资源）；
 7. 高效性（通过 Just In Time 编译器等技术的优化，Java 语言的运行效率还是非常不错的）；
@@ -29,7 +27,7 @@ head:
 9. 编译与解释并存；
 10. ……
 
-> **🐛 修正（参见：[issue#544](https://github.com/Snailclimb/JavaGuide/issues/544)）**：C++11 开始（2011 年的时候）,C++就引入了多线程库，在 windows、linux、macos 都可以使用`std::thread`和`std::async`来创建线程。参考链接：<http://www.cplusplus.com/reference/thread/thread/?kw=thread>
+> **🐛 修正（参见：[issue#544](https://github.com/Snailclimb/JavaGuide/issues/544)）**：C++11 开始（2011 年的时候），C++ 就引入了多线程库，在 Windows、Linux、macOS 都可以使用`std::thread`和`std::async`来创建线程。参考链接：<http://www.cplusplus.com/reference/thread/thread/?kw=thread>
 
 🌈 拓展一下：
 
@@ -37,14 +35,14 @@ head:
 
 ### Java SE vs Java EE
 
-- Java SE（Java Platform，Standard Edition）: Java 平台标准版，Java 编程语言的基础，它包含了支持 Java 应用程序开发和运行的核心类库以及虚拟机等核心组件。Java SE 可以用于构建桌面应用程序或简单的服务器应用程序。
-- Java EE（Java Platform, Enterprise Edition ）：Java 平台企业版，建立在 Java SE 的基础上，包含了支持企业级应用程序开发和部署的标准和规范（比如 Servlet、JSP、EJB、JDBC、JPA、JTA、JavaMail、JMS）。 Java EE 可以用于构建分布式、可移植、健壮、可伸缩和安全的服务端 Java 应用程序，例如 Web 应用程序。
+- Java SE（Java Platform, Standard Edition）: Java 平台标准版，Java 编程语言的基础，它包含了支持 Java 应用程序开发和运行的核心类库以及虚拟机等核心组件。Java SE 可以用于构建桌面应用程序或简单的服务器应用程序。
+- Java EE（Java Platform, Enterprise Edition）：Java 平台企业版，建立在 Java SE 的基础上，包含了支持企业级应用程序开发和部署的标准和规范（比如 Servlet、JSP、EJB、JDBC、JPA、JTA、JavaMail、JMS）。 Java EE 可以用于构建分布式、可移植、健壮、可伸缩和安全的服务端 Java 应用程序，例如 Web 应用程序。
 
 简单来说，Java SE 是 Java 的基础版本，Java EE 是 Java 的高级版本。Java SE 更适合开发桌面应用程序或简单的服务器应用程序，Java EE 更适合开发复杂的企业级应用程序或 Web 应用程序。
 
 除了 Java SE 和 Java EE，还有一个 Java ME（Java Platform，Micro Edition）。Java ME 是 Java 的微型版本，主要用于开发嵌入式消费电子设备的应用程序，例如手机、PDA、机顶盒、冰箱、空调等。Java ME 无需重点关注，知道有这个东西就好了，现在已经用不上了。
 
-### JVM vs JDK vs JRE
+### ⭐️JVM vs JDK vs JRE
 
 #### JVM
 
@@ -87,7 +85,7 @@ JRE 是运行已编译 Java 程序所需的环境，主要包含以下两个部�
 
 定制的、模块化的 Java 运行时映像有助于简化 Java 应用的部署和节省内存并增强安全性和可维护性。这对于满足现代应用程序架构的需求，如虚拟化、容器化、微服务和云原生开发，是非常重要的。
 
-### 什么是字节码?采用字节码的好处是什么?
+### ⭐️什么是字节码?采用字节码的好处是什么?
 
 在 Java 中，JVM 可以理解的代码就叫做字节码（即扩展名为 `.class` 的文件），它不面向任何特定的处理器，只面向虚拟机。Java 语言通过字节码的方式，在一定程度上解决了传统解释型语言执行效率低的问题，同时又保留了解释型语言可移植的特点。所以， Java 程序运行时相对来说还是高效的（不过，和 C、 C++，Rust，Go 等语言还是有一定差距的），而且，由于字节码并不针对一种特定的机器，因此，Java 程序无须重新编译便可在多种不同操作系统的计算机上运行。
 
@@ -114,7 +112,7 @@ JDK、JRE、JVM、JIT 这四者的关系如下图所示。
 
 ![JVM 的大致结构模型](https://oss.javaguide.cn/github/javaguide/java/basis/jvm-rough-structure-model.png)
 
-### 为什么说 Java 语言“编译与解释并存”？
+### ⭐️为什么说 Java 语言“编译与解释并存”？
 
 其实这个问题我们讲字节码的时候已经提到过，因为比较重要，所以我们这里再提一下。
 
@@ -139,11 +137,21 @@ JDK、JRE、JVM、JIT 这四者的关系如下图所示。
 
 JDK 9 引入了一种新的编译模式 **AOT(Ahead of Time Compilation)** 。和 JIT 不同的是，这种编译模式会在程序被执行前就将其编译成机器码，属于静态编译（C、 C++，Rust，Go 等语言就是静态编译）。AOT 避免了 JIT 预热等各方面的开销，可以提高 Java 程序的启动速度，避免预热时间长。并且，AOT 还能减少内存占用和增强 Java 程序的安全性（AOT 编译后的代码不容易被反编译和修改），特别适合云原生场景。
 
-**JIT 与 AOT 两者的关键指标对比**:
+**JIT 与 AOT 两者的关键指标对比**：
+
+| 对比维度         | JIT（即时编译）    | AOT（提前编译）              |
+| ---------------- | ------------------ | ---------------------------- |
+| **编译时机**     | 运行时编译         | 运行前编译                   |
+| **启动速度**     | 较慢（需要预热）   | 快（无需预热）               |
+| **峰值性能**     | 更高（运行时优化） | 较低（缺少运行时信息）       |
+| **内存占用**     | 较高               | 较低                         |
+| **打包体积**     | 较小               | 较大（包含机器码）           |
+| **动态特性支持** | 完全支持           | 受限（反射、动态代理等）     |
+| **适用场景**     | 长时间运行的服务   | 云原生、Serverless、CLI 工具 |
 
 <img src="https://oss.javaguide.cn/github/javaguide/java/basis/jit-vs-aot.png" alt="JIT vs AOT" style="zoom: 25%;" />
 
-可以看出，AOT 的主要优势在于启动时间、内存占用和打包体积。JIT 的主要优势在于具备更高的极限处理能力，可以降低请求的最大延迟。
+可以看出，**AOT 的主要优势在于启动时间、内存占用和打包体积**。**JIT 的主要优势在于具备更高的极限处理能力**，可以降低请求的最大延迟。
 
 提到 AOT 就不得不提 [GraalVM](https://www.graalvm.org/) 了！GraalVM 是一种高性能的 JDK（完整的 JDK 发行版本），它可以运行 Java 和其他 JVM 语言，以及 JavaScript、Python 等非 JVM 语言。 GraalVM 不仅能提供 AOT 编译，还能提供 JIT 编译。感兴趣的同学，可以去看看 GraalVM 的官方文档：<https://www.graalvm.org/latest/docs/>。如果觉得官方文档看着比较难理解的话，也可以找一些文章来看看，比如：
 
@@ -225,7 +233,7 @@ Java 中的注释有三种：
 
 ![](https://oss.javaguide.cn/github/javaguide/java/basis/image-20220714112336911.png)
 
-在我们编写代码的时候，如果代码量比较少，我们自己或者团队其他成员还可以很轻易地看懂代码，但是当项目结构一旦复杂起来，我们就需要用到注释了。注释并不会执行(编译器在编译代码之前会把代码中的所有注释抹掉,字节码中不保留注释)，是我们程序员写给自己看的，注释是你的代码说明书，能够帮助看代码的人快速地理清代码之间的逻辑关系。因此，在写程序的时候随手加上注释是一个非常好的习惯。
+在我们编写代码的时候，如果代码量比较少，我们自己或者团队其他成员还可以很轻易地看懂代码，但是当项目结构一旦复杂起来，我们就需要用到注释了。注释并不会执行(编译器在编译代码之前会把代码中的所有注释抹掉，字节码中不保留注释)，是我们程序员写给自己看的，注释是你的代码说明书，能够帮助看代码的人快速地理清代码之间的逻辑关系。因此，在写程序的时候随手加上注释是一个非常好的习惯。
 
 《Clean Code》这本书明确指出：
 
@@ -282,7 +290,7 @@ Java 中的注释有三种：
 
 官方文档：[https://docs.oracle.com/javase/tutorial/java/nutsandbolts/\_keywords.html](https://docs.oracle.com/javase/tutorial/java/nutsandbolts/_keywords.html)
 
-### 自增自减运算符
+### ⭐️自增自减运算符
 
 在写代码的过程中，常见的一种情况是需要某个整数类型变量增加 1 或减少 1。Java 提供了自增运算符 (`++`) 和自减运算符 (`--`) 来简化这种操作。
 
@@ -292,6 +300,29 @@ Java 中的注释有三种：
 - **后缀形式**（例如 `a++` 或 `a--`）：先使用变量的当前值，然后再自增/自减变量的值。例如，`b = a++` 先将 `a` 的当前值赋给 `b`，然后再将 `a` 增加 1。
 
 为了方便记忆，可以使用下面的口诀：**符号在前就先加/减，符号在后就后加/减**。
+
+```mermaid
+flowchart LR
+    %% 定义全局样式
+    classDef step fill:#4CA497,color:#fff,rx:10,ry:10
+    classDef example fill:#E99151,color:#fff,rx:10,ry:10
+
+    subgraph Prefix["前缀形式 ++a / --a"]
+        direction TB
+        style Prefix fill:#F5F7FA,stroke:#E0E6ED,stroke-width:1.5px
+        P1["第一步：变量自增/自减"]:::step --> P2["第二步：使用新值参与运算"]:::step
+        P3["示例：b = ++a<br先 a=a+1，再 b=a"]:::example
+    end
+
+    subgraph Suffix["后缀形式 a++ / a--"]
+        direction TB
+        style Suffix fill:#F5F7FA,stroke:#E0E6ED,stroke-width:1.5px
+        S1["第一步：使用当前值参与运算"]:::step --> S2["第二步：变量自增/自减"]:::step
+        S3["示例：b = a++<br先 b=a，再 a=a+1"]:::example
+    end
+
+    linkStyle default stroke-width:1.5px,opacity:0.8
+```
 
 下面来看一个考察自增自减运算符的高频笔试题：执行下面的代码后，`a` 、`b` 、 `c` 、`d`和`e`的值是？
 
@@ -305,7 +336,7 @@ int e = --d;
 
 答案：`a = 11` 、`b = 9` 、 `c = 10` 、 `d = 10` 、 `e = 10`。
 
-### 移位运算符
+### ⭐️移位运算符
 
 移位运算符是最基本的运算符之一，几乎每种编程语言都包含这一运算符。移位操作中，被操作的数据被视为二进制数，移位就是将其向左或向右移动若干位的运算。
 
@@ -332,15 +363,54 @@ static final int hash(Object key) {
 - **位字段管理**：例如存储和操作多个布尔值。
 - **哈希算法和加密解密**：通过移位和与、或等操作来混淆数据。
 - **数据压缩**：例如霍夫曼编码通过移位运算符可以快速处理和操作二进制数据，以生成紧凑的压缩格式。
-- **数据校验**：例如 CRC（循环冗余校验）通过移位和多项式除法生成和校验数据完整性。。
+- **数据校验**：例如 CRC（循环冗余校验）通过移位和多项式除法生成和校验数据完整性。
 - **内存对齐**：通过移位操作，可以轻松计算和调整数据的对齐地址。
 
 掌握最基本的移位运算符知识还是很有必要的，这不光可以帮助我们在代码中使用，还可以帮助我们理解源码中涉及到移位运算符的代码。
 
+```mermaid
+flowchart TB
+    %% 定义全局样式，保持统一风格
+    classDef left fill:#4CA497,color:#fff,rx:10,ry:10
+    classDef right fill:#00838F,color:#fff,rx:10,ry:10
+    classDef uright fill:#E99151,color:#fff,rx:10,ry:10
+
+    subgraph ShiftOps["Java 三种移位运算符"]
+        direction TB
+        style ShiftOps fill:#F0F2F5,stroke:#E0E6ED,stroke-width:1.5px
+
+        subgraph Left["左移 <<"]
+            style Left fill:#F5F7FA,stroke:#E0E6ED,stroke-width:1.5px
+            L1["操作：向左移动 n 位"]:::left
+            L2["规则：高位丢弃，低位补 0"]:::left
+            L3["效果：相当于 × 2^n"]:::left
+            L4["示例：8 << 2 = 32"]:::left
+        end
+
+        subgraph Right["带符号右移 >>"]
+            style Right fill:#F5F7FA,stroke:#E0E6ED,stroke-width:1.5px
+            R1["操作：向右移动 n 位"]:::right
+            R2["规则：低位丢弃，高位补符号位"]:::right
+            R3["效果：相当于 ÷ 2^n"]:::right
+            R4["示例：-8 >> 2 = -2"]:::right
+        end
+
+        subgraph URight["无符号右移 >>>"]
+            style URight fill:#F5F7FA,stroke:#E0E6ED,stroke-width:1.5px
+            U1["操作：向右移动 n 位"]:::uright
+            U2["规则：低位丢弃，高位补 0"]:::uright
+            U3["效果：逻辑右移"]:::uright
+            U4["示例：-8 >>> 2 = 1073741822"]:::uright
+        end
+    end
+
+    linkStyle default stroke-width:1.5px,opacity:0.8
+```
+
 Java 中有三种移位运算符：
 
-- `<<` :左移运算符，向左移若干位，高位丢弃，低位补零。`x << n`,相当于 x 乘以 2 的 n 次方(不溢出的情况下)。
-- `>>` :带符号右移，向右移若干位，高位补符号位，低位丢弃。正数高位补 0,负数高位补 1。`x >> n`,相当于 x 除以 2 的 n 次方。
+- `<<` :左移运算符，向左移若干位，高位丢弃，低位补零。`x << n`，相当于 x 乘以 2 的 n 次方(不溢出的情况下)。
+- `>>` :带符号右移，向右移若干位，高位补符号位，低位丢弃。正数高位补 0，负数高位补 1。`x >> n`，相当于 x 除以 2 的 n 次方。
 - `>>>` :无符号右移，忽略符号位，空位都以 0 补齐。
 
 虽然移位运算本质上可以分为左移和右移，但在实际应用中，右移操作需要考虑符号位的处理方式。
@@ -400,6 +470,44 @@ System.out.println("左移 10 位后的数据对应的二进制字符 " + Intege
 1. `return;`：直接使用 return 结束方法执行，用于没有返回值函数的方法
 2. `return value;`：return 一个特定值，用于有返回值函数的方法
 
+```mermaid
+flowchart TB
+    subgraph Method["方法体"]
+        direction TB
+        style Method fill:#F5F7FA,stroke:#E0E6ED,stroke-width:1.5px
+        Start["方法开始"] --> Loop
+
+        subgraph Loop["循环体 for/while"]
+            direction TB
+            style Loop fill:#F0F2F5,stroke:#E0E6ED,stroke-width:1.5px
+            L1["循环条件判断"] -->|"满足"| L2["执行循环体"]
+            L2 --> L3{{"遇到关键字？"}}
+            L3 -->|"continue"| Continue["跳过本次<br/>继续下一次循环"]
+            L3 -->|"break"| Break["跳出整个循环"]
+            L3 -->|"无"| L1
+            Continue --> L1
+        end
+
+        Break --> AfterLoop["循环后的代码"]
+        L1 -->|"不满足"| AfterLoop
+        AfterLoop --> L4{{"遇到 return？"}}
+        L4 -->|"是"| Return["结束整个方法"]
+        L4 -->|"否"| End["方法正常结束"]
+    end
+
+    classDef start fill:#E99151,color:#fff,rx:10,ry:10
+    classDef loop fill:#4CA497,color:#fff,rx:10,ry:10
+    classDef decision fill:#00838F,color:#fff,rx:10,ry:10
+    classDef alert fill:#C44545,color:#fff,rx:10,ry:10
+
+    class Start,End start
+    class L1,L2,AfterLoop loop
+    class L3,L4 decision
+    class Continue,Break,Return alert
+
+    linkStyle default stroke-width:1.5px,opacity:0.8
+```
+
 思考一下：下列语句的运行结果是什么？
 
 ```java
@@ -442,7 +550,7 @@ xixi
 haha
 ```
 
-## 基本数据类型
+## ⭐️基本数据类型
 
 ### Java 中的几种基本数据类型了解么？
 
@@ -453,6 +561,37 @@ Java 中有 8 种基本数据类型，分别为：
   - 2 种浮点型：`float`、`double`
 - 1 种字符类型：`char`
 - 1 种布尔型：`boolean`。
+
+```mermaid
+flowchart TB
+    Root["Java 8种基本数据类型"] --> Numeric["数字类型（6种）"]
+    Root --> Char["字符类型"]
+    Root --> Bool["布尔类型"]
+
+    Numeric --> IntType["整数型（4种）"]
+    Numeric --> FloatType["浮点型（2种）"]
+
+    IntType --> byte["byte<br/>8位"]
+    IntType --> short["short<br/>16位"]
+    IntType --> int["int<br/>32位"]
+    IntType --> long["long<br/>64位"]
+
+    FloatType --> float["float<br/>32位"]
+    FloatType --> double["double<br/>64位"]
+
+    Char --> char["char<br/>16位"]
+    Bool --> boolean["boolean<br/>1位"]
+
+    classDef root fill:#E99151,color:#fff,rx:10,ry:10
+    classDef category fill:#00838F,color:#fff,rx:10,ry:10
+    classDef type fill:#4CA497,color:#fff,rx:10,ry:10
+
+    class Root root
+    class Numeric,Char,Bool,IntType,FloatType category
+    class byte,short,int,long,float,double,char,boolean type
+
+    linkStyle default stroke-width:1.5px,opacity:0.8
+```
 
 这 8 种基本数据类型的默认值以及所占空间的大小如下：
 
@@ -513,7 +652,11 @@ public class Test {
 
 Java 基本数据类型的包装类型的大部分都用到了缓存机制来提升性能。
 
-`Byte`,`Short`,`Integer`,`Long` 这 4 种包装类默认创建了数值 **[-128，127]** 的相应类型的缓存数据，`Character` 创建了数值在 **[0,127]** 范围的缓存数据，`Boolean` 直接返回 `True` or `False`。
+`Byte`,`Short`,`Integer`,`Long` 这 4 种包装类默认创建了数值 **[-128，127]** 的相应类型的缓存数据，`Character` 创建了数值在 **[0,127]** 范围的缓存数据，`Boolean` 直接返回 `TRUE` or `FALSE`。
+
+对于 `Integer`，可以通过 JVM 参数 `-XX:AutoBoxCacheMax=<size>` 修改缓存上限，但不能修改下限 -128。实际使用时，并不建议设置过大的值，避免浪费内存，甚至是 OOM。
+
+对于`Byte`,`Short`,`Long` ,`Character` 没有类似 `-XX:AutoBoxCacheMax` 参数可以修改，因此缓存范围是固定的，无法通过 JVM 参数调整。`Boolean` 则直接返回预定义的 `TRUE` 和 `FALSE` 实例，没有缓存范围的概念。
 
 **Integer 缓存源码：**
 
@@ -600,8 +743,38 @@ System.out.println(i1==i2);
 
 **什么是自动拆装箱？**
 
-- **装箱**：将基本类型用它们对应的引用类型包装起来；
-- **拆箱**：将包装类型转换为基本数据类型；
+- **装箱（Boxing）**：将基本类型用它们对应的引用类型包装起来；
+- **拆箱（Unboxing）**：将包装类型转换为基本数据类型；
+
+```mermaid
+flowchart LR
+  subgraph Row["装箱与拆箱对比"]
+    direction LR
+    style Row fill:#F0F2F5,stroke:#E0E6ED,stroke-width:1.5px
+
+    subgraph Unboxing["拆箱过程"]
+      direction LR
+      style Unboxing fill:#F5F7FA,stroke:#E0E6ED,stroke-width:1.5px
+      D["Integer obj"] -->|"自动拆箱"| E["obj.intValue()"]
+      E --> F["int 基本类型"]
+    end
+
+    subgraph Boxing["装箱过程"]
+      direction LR
+      style Boxing fill:#F5F7FA,stroke:#E0E6ED,stroke-width:1.5px
+      A["int i = 10"] -->|"自动装箱"| B["Integer.valueOf(10)"]
+      B --> C["Integer 对象"]
+    end
+  end
+
+  classDef core fill:#4CA497,color:#fff,rx:10,ry:10
+  classDef highlight fill:#E99151,color:#fff,rx:10,ry:10
+
+  class A,D core
+  class C,F highlight
+
+  linkStyle default stroke-width:1.5px,opacity:0.8
+```
 
 举例：
 
@@ -673,9 +846,9 @@ System.out.println(b);// 0.099999905
 System.out.println(a == b);// false
 ```
 
-为什么会出现这个问题呢？
+**为什么会出现这个问题呢？**
 
-这个和计算机保存浮点数的机制有很大关系。我们知道计算机是二进制的，而且计算机在表示一个数字时，宽度是有限的，无限循环的小数存储在计算机时，只能被截断，所以就会导致小数精度发生损失的情况。这也就是解释了为什么浮点数没有办法用二进制精确表示。
+这个和计算机保存浮点数的机制有很大关系。我们知道计算机是二进制的，而且计算机在表示一个数字时，宽度是有限的，无限循环的小数存储在计算机时，只能被截断，所以就会导致小数精度发生损失的情况。这也就解释了为什么浮点数没有办法用二进制精确表示。
 
 就比如说十进制下的 0.2 就没办法精确转换成二进制小数：
 
@@ -732,7 +905,9 @@ System.out.println(l + 1 == Long.MIN_VALUE); // true
 
 ## 变量
 
-### 成员变量与局部变量的区别？
+### ⭐️成员变量与局部变量的区别？
+
+![](https://oss.javaguide.cn/github/javaguide/java/basis/java-basis-variables-member-variable-vs-local-variable.png)
 
 - **语法形式**：从语法形式上看，成员变量是属于类的，而局部变量是在代码块或方法中定义的变量或是方法的参数；成员变量可以被 `public`,`private`,`static` 等修饰符所修饰，而局部变量不能被访问控制修饰符及 `static` 所修饰；但是，成员变量和局部变量都能被 `final` 所修饰。
 - **存储方式**：从变量在内存中的存储方式来看，如果成员变量是使用 `static` 修饰的，那么这个成员变量是属于类的，如果没有使用 `static` 修饰，这个成员变量是属于实例的。而对象存在于堆内存，局部变量则存在于栈内存。
@@ -741,11 +916,16 @@ System.out.println(l + 1 == Long.MIN_VALUE); // true
 
 **为什么成员变量有默认值？**
 
-1. 先不考虑变量类型，如果没有默认值会怎样？变量存储的是内存地址对应的任意随机值，程序读取该值运行会出现意外。
+核心原因是为了保证对象状态的安全和可预测性。
 
-2. 默认值有两种设置方式：手动和自动，根据第一点，没有手动赋值一定要自动赋值。成员变量在运行时可借助反射等方法手动赋值，而局部变量不行。
+成员变量和局部变量在这个规则上不同，主要是因为它们的**生命周期**不一样，导致了编译器对它们的“控制力”也不同。
 
-3. 对于编译器（javac）来说，局部变量没赋值很好判断，可以直接报错。而成员变量可能是运行时赋值，无法判断，误报“没默认值”又会影响用户体验，所以采用自动赋默认值。
+- **局部变量**只活在一个方法里，编译器能清楚地看到它是否在使用前被赋值，所以编译器会强制你必须手动赋值，否则就报错。
+- **成员变量**是跟着对象走的，它的值可能在构造函数里赋，也可能在后面的某个 `setter` 方法里赋。编译器在编译时**无法预测**它到底什么时候会被赋值。
+
+并且，如果一个变量没有被初始化，它的内存里存放的就是“垃圾值”——之前那块内存遗留下的任意数据。如果程序读取并使用了这个垃圾值，就会产生完全不可预测的结果，比如一个数字变成了随机数，一个对象引用变成了非法地址，这会直接导致程序崩溃或出现诡异的 bug。
+
+为了避免你拿到一个含有“垃圾值”的危险对象，Java干脆为所有成员变量提供了一个安全的默认值（如 null 或 0），作为一种**安全兜底机制**。
 
 成员变量与局部变量代码示例：
 
@@ -787,6 +967,8 @@ public class VariableExample {
 
 静态变量也就是被 `static` 关键字修饰的变量。它可以被类的所有实例共享，无论一个类创建了多少个对象，它们都共享同一份静态变量。也就是说，静态变量只会被分配一次内存，即使创建多个对象，这样可以节省内存。
 
+![](https://oss.javaguide.cn/github/javaguide/java/basis/java-basis-variables-static-variable.png)
+
 静态变量是通过类名来访问的，例如`StaticVariableExample.staticVar`（如果被 `private`关键字修饰就无法这样访问了）。
 
 ```java
@@ -808,7 +990,7 @@ public class ConstantVariableExample {
 ### 字符型常量和字符串常量的区别?
 
 - **形式** : 字符常量是单引号引起的一个字符，字符串常量是双引号引起的 0 个或若干个字符。
-- **含义** : 字符常量相当于一个整型值( ASCII 值),可以参加表达式运算; 字符串常量代表一个地址值(该字符串在内存中存放位置)。
+- **含义** : 字符常量相当于一个整型值（ASCII 值），可以参加表达式运算; 字符串常量代表一个地址值（该字符串在内存中存放位置）。
 - **占内存大小**：字符常量只占 2 个字节; 字符串常量占若干个字节。
 
 ⚠️ 注意 `char` 在 Java 中占两个字节。
@@ -853,7 +1035,7 @@ public void f1() {
 // 下面这个方法也没有返回值，虽然用到了 return
 public void f(int a) {
     if (...) {
-        // 表示结束方法的执行,下方的输出语句不会执行
+        // 表示结束方法的执行，下方的输出语句不会执行
         return;
     }
     System.out.println(a);
@@ -910,7 +1092,7 @@ public class Example {
 }
 ```
 
-### 静态方法和实例方法有何不同？
+### ⭐️静态方法和实例方法有何不同？
 
 **1、调用方式**
 
@@ -943,7 +1125,7 @@ public class Person {
 
 静态方法在访问本类的成员时，只允许访问静态成员（即静态成员变量和静态方法），不允许访问实例成员（即实例成员变量和实例方法），而实例方法不存在这个限制。
 
-### 重载和重写有什么区别？
+### ⭐️重载和重写有什么区别？
 
 > 重载就是同样的一个方法能够根据输入数据的不同，做出不同的处理
 >
@@ -980,14 +1162,13 @@ public class Person {
 
 综上：**重写就是子类对父类方法的重新改造，外部样子不能改变，内部逻辑可以改变。**
 
-| 区别点     | 重载方法 | 重写方法                                                         |
-| :--------- | :------- | :--------------------------------------------------------------- |
-| 发生范围   | 同一个类 | 子类                                                             |
-| 参数列表   | 必须修改 | 一定不能修改                                                     |
-| 返回类型   | 可修改   | 子类方法返回值类型应比父类方法返回值类型更小或相等               |
-| 异常       | 可修改   | 子类方法声明抛出的异常类应比父类方法声明抛出的异常类更小或相等； |
-| 访问修饰符 | 可修改   | 一定不能做更严格的限制（可以降低限制）                           |
-| 发生阶段   | 编译期   | 运行期                                                           |
+| 区别点         | 重载 (Overloading)                                                                   | 重写 (Overriding)                                                                            |
+| -------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| **发生范围**   | 同一个类中。                                                                         | 父类与子类之间（存在继承关系）。                                                             |
+| **方法签名**   | 方法名**必须相同**，但**参数列表必须不同**（参数的类型、个数或顺序至少有一项不同）。 | 方法名、参数列表**必须完全相同**。                                                           |
+| **返回类型**   | 与返回值类型**无关**，可以任意修改。                                                 | 子类方法的返回类型必须与父类方法的返回类型**相同**，或者是其**子类**。                       |
+| **访问修饰符** | 与访问修饰符**无关**，可以任意修改。                                                 | 子类方法的访问权限**不能低于**父类方法的访问权限。（public > protected > default > private） |
+| **绑定时期**   | 编译时绑定或称静态绑定                                                               | 运行时绑定 (Run-time Binding) 或称动态绑定                                                   |
 
 **方法的重写要遵循“两同两小一大”**（以下内容摘录自《疯狂 Java 讲义》，[issue#892](https://github.com/Snailclimb/JavaGuide/issues/892) ）：
 

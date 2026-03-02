@@ -10,9 +10,10 @@ node_modules/
 **/.vuepress/.temp/
 # VuePress Output
 dist/
-# Build files
-packages/*/lib/
 traversal-folder-replace-string.py
 format-markdown.py
+
+.npmrc
 package-lock.json
 lintmd-config.json
+.claude/settings.local.json

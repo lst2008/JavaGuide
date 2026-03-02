@@ -11,8 +11,6 @@ export default hopeTheme({
   logo: "/logo.png",
   favicon: "/favicon.ico",
 
-  iconAssets: "//at.alicdn.com/t/c/font_2922463_o9q9dxmps9.css",
-
   author: {
     name: "Guide",
     url: "https://javaguide.cn/article/",
@@ -20,8 +18,8 @@ export default hopeTheme({
 
   repo: "https://github.com/Snailclimb/JavaGuide",
   docsDir: "docs",
-  // 纯净模式：https://theme-hope.vuejs.press/zh/guide/interface/pure.html
   pure: true,
+  focus: false,
   breadcrumb: false,
   navbar,
   sidebar,
@@ -33,7 +31,6 @@ export default hopeTheme({
 
   blog: {
     intro: "/about-the-author/",
-    sidebarDisplay: "mobile",
     medias: {
       Zhihu: "https://www.zhihu.com/people/javaguide",
       Github: "https://github.com/Snailclimb",
@@ -44,6 +41,7 @@ export default hopeTheme({
   markdown: {
     align: true,
     codeTabs: true,
+    mermaid: true,
     gfm: true,
     include: {
       resolvePath: (file, cwd) => {
@@ -62,6 +60,7 @@ export default hopeTheme({
 
   plugins: {
     blog: true,
+    sitemap: true,
 
     copyright: {
       author: "JavaGuide(javaguide.cn)",
@@ -76,6 +75,10 @@ export default hopeTheme({
       atom: true,
       json: true,
       rss: true,
+    },
+
+    icon: {
+      assets: "//at.alicdn.com/t/c/font_2922463_o9q9dxmps9.css",
     },
 
     search: {

@@ -1,8 +1,13 @@
 ---
 title: DelayQueue 源码分析
+description: DelayQueue源码深度解析：详解延迟队列实现原理、Delayed接口使用、延时任务调度、订单超时取消等应用场景、基于PriorityQueue的线程安全设计。
 category: Java
 tag:
   - Java集合
+head:
+  - - meta
+    - name: keywords
+      content: DelayQueue源码,延迟队列,Delayed接口,延时任务,定时任务,订单超时,PriorityQueue实现
 ---
 
 ## DelayQueue 简介

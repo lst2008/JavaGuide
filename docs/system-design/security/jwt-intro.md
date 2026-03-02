@@ -1,8 +1,13 @@
 ---
 title: JWT 基础概念详解
+description: JWT基础概念详解，涵盖JSON Web Token的组成结构、签名算法、工作原理及在登录鉴权中的应用。
 category: 系统设计
 tag:
   - 安全
+head:
+  - - meta
+    - name: keywords
+      content: JWT,JSON Web Token,Token认证,无状态,Header Payload Signature,签名算法,登录鉴权,CSRF
 ---
 
 <!-- @include: @article-header.snippet.md -->
@@ -127,16 +132,17 @@ HMACSHA256(
 
 ## 如何基于 JWT 进行身份验证？
 
-在基于 JWT 进行身份验证的的应用程序中，服务器通过 Payload、Header 和 Secret(密钥)创建 JWT 并将 JWT 发送给客户端。客户端接收到 JWT 之后，会将其保存在 Cookie 或者 localStorage 里面，以后客户端发出的所有请求都会携带这个令牌。
+在基于 JWT 进行身份验证的应用程序中，服务器通过 Payload、Header 和 Secret(密钥)创建 JWT 并将 JWT 发送给客户端。客户端接收到 JWT 之后，会将其保存在 Cookie 或者 localStorage 里面，以后客户端发出的所有请求都会携带这个令牌。
 
 ![ JWT 身份验证示意图](https://oss.javaguide.cn/github/javaguide/system-design/jwt/jwt-authentication%20process.png)
 
 简化后的步骤如下：
 
-1. 用户向服务器发送用户名、密码以及验证码用于登陆系统。
-2. 如果用户用户名、密码以及验证码校验正确的话，服务端会返回已经签名的 Token，也就是 JWT。
-3. 用户以后每次向后端发请求都在 Header 中带上这个 JWT 。
-4. 服务端检查 JWT 并从中获取用户相关信息。
+1. 用户向服务器发送用户名、密码以及验证码用于登陆系统；
+2. 如果用户用户名、密码以及验证码校验正确的话，服务端会返回已经签名的 Token，也就是 JWT；
+3. 客户端收到 Token 后自己保存起来（比如浏览器的 `localStorage` ）；
+4. 用户以后每次向后端发请求都在 Header 中带上这个 JWT ；
+5. 服务端检查 JWT 并从中获取用户相关信息。
 
 两点建议：
 

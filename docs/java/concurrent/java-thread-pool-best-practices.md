@@ -1,8 +1,13 @@
 ---
 title: Java 线程池最佳实践
+description: Java线程池最佳实践总结：详解线程池参数配置、避免Executors工厂方法OOM风险、拒绝策略选择、线程池监控、线程命名规范等生产级实践。
 category: Java
 tag:
   - Java并发
+head:
+  - - meta
+    - name: keywords
+      content: 线程池最佳实践,ThreadPoolExecutor配置,Executors陷阱,OOM风险,拒绝策略,线程池监控,线程命名
 ---
 
 简单总结一下我了解的使用线程池的时候应该注意的东西，网上似乎还没有专门写这方面的文章。
@@ -13,7 +18,7 @@ tag:
 
 `Executors` 返回线程池对象的弊端如下(后文会详细介绍到)：
 
-- **`FixedThreadPool` 和 `SingleThreadExecutor`**：使用的是有界阻塞队列 `LinkedBlockingQueue`，任务队列的默认长度和最大长度为 `Integer.MAX_VALUE`，可能堆积大量的请求，从而导致 OOM。
+- **`FixedThreadPool` 和 `SingleThreadExecutor`**：使用的是阻塞队列 `LinkedBlockingQueue`，任务队列的默认长度和最大长度为 `Integer.MAX_VALUE`，可以看作是无界队列，可能堆积大量的请求，从而导致 OOM。
 - **`CachedThreadPool`**：使用的是同步队列 `SynchronousQueue`，允许创建的线程数量为 `Integer.MAX_VALUE` ，可能会创建大量线程，从而导致 OOM。
 - **`ScheduledThreadPool` 和 `SingleThreadScheduledExecutor`** : 使用的无界的延迟阻塞队列`DelayedWorkQueue`，任务队列最大长度为 `Integer.MAX_VALUE`，可能堆积大量的请求，从而导致 OOM。
 
@@ -273,7 +278,7 @@ public class ThreadPoolExecutorConfig {
         int maxPoolSize = (int) (processNum / (1 - 0.5));
         threadPoolExecutor.setCorePoolSize(corePoolSize); // 核心池大小
         threadPoolExecutor.setMaxPoolSize(maxPoolSize); // 最大线程数
-        threadPoolExecutor.setQueueCapacity(maxPoolSize * 1000); // 队列程度
+        threadPoolExecutor.setQueueCapacity(maxPoolSize * 1000); // 队列长度
         threadPoolExecutor.setThreadPriority(Thread.MAX_PRIORITY);
         threadPoolExecutor.setDaemon(false);
         threadPoolExecutor.setKeepAliveSeconds(300);// 线程空闲时间

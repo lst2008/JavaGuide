@@ -1,13 +1,22 @@
 ---
 icon: creative
-title: JavaGuide（Java学习&面试指南）
+title: JavaGuide（Java 面试 & 后端通用面试指南）
+description: Java 面试指南（Java 八股文/面试题总结）：覆盖 Java 基础、集合、并发、JVM、Spring、MySQL、Redis、系统设计与分布式等核心知识，适用于校招/社招后端面试复习。
+head:
+  - - meta
+    - name: keywords
+      content: Java面试,Java面试指南,Java八股文,Java面试题,Java基础面试,JVM面试,并发面试,线程池面试,Spring面试,MySQL面试,Redis面试,系统设计面试,分布式面试,后端面试
 ---
 
 ::: tip 友情提示
 
-- **面试专版**：准备 Java 面试的小伙伴可以考虑面试专版：**[《Java 面试指北 》](./zhuanlan/java-mian-shi-zhi-bei.md)** (质量很高，专为面试打造，配合 JavaGuide 食用)。
-- **知识星球**：专属面试小册/一对一交流/简历修改/专属求职指南，欢迎加入 **[JavaGuide 知识星球](./about-the-author/zhishixingqiu-two-years.md)**（点击链接即可查看星球的详细介绍，一定确定自己真的需要再加入）。
-- **使用建议** ：有水平的面试官都是顺着项目经历挖掘技术问题。一定不要死记硬背技术八股文！详细的学习建议请参考：[JavaGuide 使用建议](./javaguide/use-suggestion.md)。
+- **实战项目**：
+  - [⭐AI 智能面试辅助平台 + RAG 知识库](https://javaguide.cn/zhuanlan/interview-guide.html)：基于 Spring Boot 4.0 + Java 21 + Spring AI 2.0 开发。非常适合作为学习和简历项目，学习门槛低，帮助提升求职竞争力，是主打就业的实战项目。
+  - [手写 RPC 框架](https://javaguide.cn/zhuanlan/handwritten-rpc-framework.html)：从零开始基于 Netty+Kyro+Zookeeper 实现一个简易的 RPC 框架。麻雀虽小五脏俱全，项目代码注释详细，结构清晰。
+- **面试资料补充**：
+  - [《Java 面试指北》](https://javaguide.cn/zhuanlan/java-mian-shi-zhi-bei.html)：四年打磨，和 JavaGuide 开源版的内容互补，带你从零开始系统准备后端面试！
+  - [《后端面试高频系统设计&场景题》](https://javaguide.cn/zhuanlan/back-end-interview-high-frequency-system-design-and-scenario-questions.html)：30+ 道高频系统设计和场景面试，助你应对当下中大厂面试趋势。
+- **使用建议** ：有水平的面试官都是顺着项目经历挖掘技术问题。一定不要死记硬背技术八股文！详细的学习建议请参考：[JavaGuide 使用建议](https://javaguide.cn/javaguide/use-suggestion.html)。
 - **求个 Star**：如果觉得 JavaGuide 的内容对你有帮助的话，还请点个免费的 Star，这是对我最大的鼓励，感谢各位一起同行，共勉！传送门：[GitHub](https://github.com/Snailclimb/JavaGuide) | [Gitee](https://gitee.com/SnailClimb/JavaGuide)。
 - **转载须知**：以下所有文章如非文首说明为转载皆为 JavaGuide 原创，转载请在文首注明出处。如发现恶意抄袭/搬运，会动用法律武器维护自己的权益。让我们一起维护一个良好的技术创作环境！
 
@@ -72,7 +81,7 @@ title: JavaGuide（Java学习&面试指南）
 
 **重要知识点详解**：
 
-- [乐观锁和悲观锁详解](./java/concurrent/jmm.md)
+- [乐观锁和悲观锁详解](./java/concurrent/optimistic-lock-and-pessimistic-lock.md)
 - [CAS 详解](./java/concurrent/cas.md)
 - [JMM（Java 内存模型）详解](./java/concurrent/jmm.md)
 - **线程池**：[Java 线程池详解](./java/concurrent/java-thread-pool-summary.md)、[Java 线程池最佳实践](./java/concurrent/java-thread-pool-best-practices.md)
@@ -110,6 +119,8 @@ JVM 这部分内容主要参考 [JVM 虚拟机规范-Java8](https://docs.oracle.
 - [Java 20 新特性概览](./java/new-features/java20.md)
 - [Java 21 新特性概览](./java/new-features/java21.md)
 - [Java 22 & 23 新特性概览](./java/new-features/java22-23.md)
+- [Java 24 新特性概览](./java/new-features/java24.md)
+- [Java 25 新特性概览](./java/new-features/java25.md)
 
 ## 计算机基础
 
@@ -215,6 +226,7 @@ JVM 这部分内容主要参考 [JVM 虚拟机规范-Java8](https://docs.oracle.
 **重要知识点：**
 
 - [3 种常用的缓存读写策略详解](./database/redis/3-commonly-used-cache-read-and-write-strategies.md)
+- [Redis 能做消息队列吗？怎么实现？](./database/redis/redis-stream-mq.md)
 - [Redis 5 种基本数据结构详解](./database/redis/redis-data-structures-01.md)
 - [Redis 3 种特殊数据结构详解](./database/redis/redis-data-structures-02.md)
 - [Redis 持久化机制详解](./database/redis/redis-persistence.md)
@@ -262,7 +274,7 @@ JVM 这部分内容主要参考 [JVM 虚拟机规范-Java8](https://docs.oracle.
 ### 基础
 
 - [RestFul API 简明教程](./system-design/basis/RESTfulAPI.md)
-- [软件工程简明教程简明教程](./system-design/basis/software-engineering.md)
+- [软件工程简明教程](./system-design/basis/software-engineering.md)
 - [代码命名指南](./system-design/basis/naming.md)
 - [代码重构指南](./system-design/basis/refactoring.md)
 - [单元测试指南](./system-design/basis/unit-test.md)
@@ -298,15 +310,13 @@ JVM 这部分内容主要参考 [JVM 虚拟机规范-Java8](https://docs.oracle.
 - [JWT 优缺点分析以及常见问题解决方案](./system-design/security/advantages-and-disadvantages-of-jwt.md)
 - [SSO 单点登录详解](./system-design/security/sso-intro.md)
 - [权限系统设计详解](./system-design/security/design-of-authority-system.md)
+
+#### 数据安全
+
 - [常见加密算法总结](./system-design/security/encryption-algorithms.md)
-
-#### 数据脱敏
-
-数据脱敏说的就是我们根据特定的规则对敏感信息数据进行变形，比如我们把手机号、身份证号某些位数使用 \* 来代替。
-
-#### 敏感词过滤
-
-[敏感词过滤方案总结](./system-design/security/sentive-words-filter.md)
+- [敏感词过滤方案总结](./system-design/security/sentive-words-filter.md)
+- [数据脱敏方案总结](./system-design/security/data-desensitization.md)
+- [为什么前后端都要做数据校验](./system-design/security/data-validation.md)
 
 ### 定时任务
 
@@ -323,7 +333,8 @@ JVM 这部分内容主要参考 [JVM 虚拟机规范-Java8](https://docs.oracle.
 - [CAP 理论和 BASE 理论解读](./distributed-system/protocol/cap-and-base-theorem.md)
 - [Paxos 算法解读](./distributed-system/protocol/paxos-algorithm.md)
 - [Raft 算法解读](./distributed-system/protocol/raft-algorithm.md)
-- [Gossip 协议详解](./distributed-system/protocol/gossip-protocl.md)
+- [Gossip 协议详解](./distributed-system/protocol/gossip-protocol.md)
+- [一致性哈希算法详解](./distributed-system/protocol/consistent-hashing.md)
 
 ### RPC
 
@@ -383,7 +394,7 @@ JVM 这部分内容主要参考 [JVM 虚拟机规范-Java8](https://docs.oracle.
 - [Disruptor 常见知识点&面试题总结](./high-performance/message-queue/disruptor-questions.md)
 - [RabbitMQ 常见知识点&面试题总结](./high-performance/message-queue/rabbitmq-questions.md)
 - [RocketMQ 常见知识点&面试题总结](./high-performance/message-queue/rocketmq-questions.md)
-- [Kafka 常常见知识点&面试题总结](./high-performance/message-queue/kafka-questions-01.md)
+- [Kafka 常见知识点&面试题总结](./high-performance/message-queue/kafka-questions-01.md)
 
 ## 高可用
 
@@ -413,7 +424,7 @@ JVM 这部分内容主要参考 [JVM 虚拟机规范-Java8](https://docs.oracle.
 
 **灾备** = 容灾 + 备份。
 
-- **备份**：将系统所产生的的所有重要数据多备份几份。
+- **备份**：将系统所产生的所有重要数据多备份几份。
 - **容灾**：在异地建立两个完全相同的系统。当某个地方的系统突然挂掉，整个应用系统可以切换到另一个，这样系统就可以正常提供服务了。
 
 **异地多活** 描述的是将服务部署在异地并且服务同时对外提供服务。和传统的灾备设计的最主要区别在于“多活”，即所有站点都是同时在对外提供服务的。异地多活是为了应对突发状况比如火灾、地震等自然或者人为灾害。

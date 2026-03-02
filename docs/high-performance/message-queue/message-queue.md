@@ -1,8 +1,13 @@
 ---
 title: 消息队列基础知识总结
+description: 本文系统总结消息队列的核心知识，涵盖消息队列的应用场景（异步处理/解耦/削峰）、消息模型（点对点/发布订阅）、如何保证消息不丢失、消息幂等性、消息顺序性、消息积压处理等常见问题，以及 Kafka、RocketMQ、RabbitMQ 技术选型对比。
 category: 高性能
 tag:
   - 消息队列
+head:
+  - - meta
+    - name: keywords
+      content: 消息队列,MQ,异步解耦,削峰填谷,消息丢失,消息幂等,消息顺序,Kafka,RocketMQ,RabbitMQ
 ---
 
 ::: tip
@@ -77,7 +82,7 @@ tag:
 
 **消息队列使用发布-订阅模式工作，消息发送者（生产者）发布消息，一个或多个消息接受者（消费者）订阅消息。** 从上图可以看到**消息发送者（生产者）和消息接受者（消费者）之间没有直接耦合**，消息发送者将消息发送至分布式消息队列即结束对消息的处理，消息接受者从分布式消息队列获取该消息后进行后续处理，并不需要知道该消息从何而来。**对新增业务，只要对该类消息感兴趣，即可订阅该消息，对原有系统和业务没有任何影响，从而实现网站业务的可扩展性设计**。
 
-例如，我们商城系统分为用户、订单、财务、仓储、消息通知、物流、风控等多个服务。用户在完成下单后，需要调用财务（扣款）、仓储（库存管理）、物流（发货）、消息通知（通知用户发货）、风控（风险评估）等服务。使用消息队列后，下单操作和后续的扣款、发货、通知等操作就解耦了，下单完成发送一个消息到消息队列，需要用到的地方去订阅这个消息进行消息即可。
+例如，我们商城系统分为用户、订单、财务、仓储、消息通知、物流、风控等多个服务。用户在完成下单后，需要调用财务（扣款）、仓储（库存管理）、物流（发货）、消息通知（通知用户发货）、风控（风险评估）等服务。使用消息队列后，下单操作和后续的扣款、发货、通知等操作就解耦了，下单完成发送一个消息到消息队列，需要用到的地方去订阅这个消息进行消费即可。
 
 ![](https://oss.javaguide.cn/github/javaguide/high-performance/message-queue/message-queue-decouple-mall-example.png)
 
@@ -101,7 +106,7 @@ RocketMQ、 Kafka、Pulsar、QMQ 都提供了事务相关的功能。事务允�
 
 ### 延时/定时处理
 
-消息发送后不会立即被消费，而是指定一个时间，到时间后再消费。大部分消息队列，例如 RocketMQ、RabbitMQ、Pulsar、Kafka，都支持定时/延时消息。
+消息发送后不会立即被消费，而是指定一个时间，到时间后再消费。大部分消息队列，例如 RocketMQ、RabbitMQ、Pulsar，都支持定时/延时消息。
 
 ![](https://oss.javaguide.cn/github/javaguide/tools/docker/rocketmq-schedule-message.png)
 
@@ -206,7 +211,7 @@ Kafka 是一个分布式系统，由通过高性能 TCP 网络协议进行通信
 
 不过，要提示一下：**如果要使用 KRaft 模式的话，建议选择较高版本的 Kafka，因为这个功能还在持续完善优化中。Kafka 3.3.1 版本是第一个将 KRaft（Kafka Raft）共识协议标记为生产就绪的版本。**
 
-![](https://oss.javaguide.cn/github/javaguide/high-performance/message-queue/kafka3.3.1-kraft-%20production-ready.png)
+![](https://oss.javaguide.cn/github/javaguide/high-performance/message-queue/kafka3.3.1-kraft-production-ready.png)
 
 Kafka 官网：<http://kafka.apache.org/>
 

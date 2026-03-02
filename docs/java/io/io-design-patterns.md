@@ -1,9 +1,14 @@
 ---
 title: Java IO 设计模式总结
+description: Java IO设计模式深度解析：详解装饰器模式在BufferedInputStream中应用、适配器模式InputStreamReader实现、模板方法模式InputStream设计，理解Java IO类库架构。
 category: Java
 tag:
   - Java IO
   - Java基础
+head:
+  - - meta
+    - name: keywords
+      content: Java IO设计模式,装饰器模式,适配器模式,模板方法模式,FilterInputStream,IO流设计
 ---
 
 这篇文章我们简单来看看我们从 IO 中能够学习到哪些设计模式的应用。
@@ -52,7 +57,7 @@ try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream("inpu
 }
 ```
 
-这个时候，你可以会想了：**为啥我们直接不弄一个`BufferedFileInputStream`（字符缓冲文件输入流）呢？**
+这个时候，你可能会想了：**为啥我们不直接弄一个`BufferedFileInputStream`（字符缓冲文件输入流）呢？**
 
 ```java
 BufferedFileInputStream bfis = new BufferedFileInputStream("input.txt");
@@ -118,8 +123,8 @@ BufferedReader bufferedReader = new BufferedReader(isr);
 
 ```java
 public class InputStreamReader extends Reader {
- //用于解码的对象
- private final StreamDecoder sd;
+    //用于解码的对象
+    private final StreamDecoder sd;
     public InputStreamReader(InputStream in) {
         super(in);
         try {
@@ -130,7 +135,7 @@ public class InputStreamReader extends Reader {
         }
     }
     // 使用 StreamDecoder 对象做具体的读取工作
- public int read() throws IOException {
+    public int read() throws IOException {
         return sd.read();
     }
 }

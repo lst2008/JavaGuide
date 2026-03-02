@@ -1,8 +1,13 @@
 ---
 title: 一千行 MySQL 学习笔记
+description: 一千行MySQL学习笔记精华总结，涵盖数据库操作、表管理、SQL语法、索引、视图、存储过程、触发器等核心知识点，适合快速查阅和复习。
 category: 数据库
 tag:
   - MySQL
+head:
+  - - meta
+    - name: keywords
+      content: MySQL学习笔记,MySQL命令大全,SQL语法,数据库操作,表操作,索引,视图,存储过程,触发器
 ---
 
 > 原文地址：<https://shockerli.net/post/1000-line-mysql-note/> ，JavaGuide 对本文进行了简答排版，新增了目录。

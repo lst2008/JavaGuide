@@ -1,8 +1,13 @@
 ---
 title: 布隆过滤器
+description: 解析 Bloom Filter 的原理与误判特性，结合哈希与位数组实现，适用于海量数据去重与缓存穿透防护。
 category: 计算机基础
 tag:
   - 数据结构
+head:
+  - - meta
+    - name: keywords
+      content: 布隆过滤器,Bloom Filter,误判率,哈希函数,位数组,去重,缓存穿透
 ---
 
 布隆过滤器相信大家没用过的话，也已经听过了。
@@ -125,7 +130,9 @@ public class MyBloomFilter {
     public boolean contains(Object value) {
         boolean ret = true;
         for (SimpleHash f : func) {
-            ret = ret && bits.get(f.hash(value));
+            ret = bits.get(f.hash(value));
+            if(!ret)
+              return ret;
         }
         return ret;
     }

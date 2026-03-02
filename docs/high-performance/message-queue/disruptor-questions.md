@@ -1,8 +1,13 @@
 ---
 title: Disruptor常见问题总结
+description: 本文总结 Disruptor 高性能内存队列的核心知识与面试要点，涵盖 Disruptor 架构（RingBuffer/Sequencer/WaitStrategy）、高性能原理（无锁设计/缓存行填充/预分配内存）、与 ArrayBlockingQueue 对比、生产者消费者模式等，助力 Disruptor 学习与面试。
 category: 高性能
 tag:
   - 消息队列
+head:
+  - - meta
+    - name: keywords
+      content: Disruptor,高性能队列,RingBuffer,无锁队列,缓存行填充,LMAX,内存队列,Disruptor面试
 ---
 
 Disruptor 是一个相对冷门一些的知识点，不过，如果你的项目经历中用到了 Disruptor 的话，那面试中就很可能会被问到。
@@ -49,7 +54,7 @@ Disruptor 主要解决了 JDK 内置线程安全队列的性能和内存安全�
 | `LinkedTransferQueue`   | 无锁（`CAS`）           | 无界     |
 | `ConcurrentLinkedQueue` | 无锁（`CAS`）           | 无界     |
 
-从上表中可以看出：这些队列要不就是加锁有界，要不就是无锁无界。而加锁的的队列势必会影响性能，无界的队列又存在内存溢出的风险。
+从上表中可以看出：这些队列要不就是加锁有界，要不就是无锁无界。而加锁的队列势必会影响性能，无界的队列又存在内存溢出的风险。
 
 因此，一般情况下，我们都是不建议使用 JDK 内置线程安全队列。
 

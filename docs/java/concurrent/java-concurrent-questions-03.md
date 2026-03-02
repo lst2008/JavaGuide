@@ -1,15 +1,13 @@
 ---
 title: Java并发常见面试题总结（下）
+description: Java并发高级面试题：详解ThreadLocal原理与内存泄漏、线程池参数配置与工作原理、Future/CompletableFuture异步编程、并发容器与工具类使用。
 category: Java
 tag:
   - Java并发
 head:
   - - meta
     - name: keywords
-      content: 多线程,死锁,线程池,CAS,AQS
-  - - meta
-    - name: description
-      content: Java并发常见知识点和面试题总结（含详细解答），希望对你有帮助！
+      content: ThreadLocal,线程池,Executor框架,Future,CompletableFuture,并发工具类,并发容器,并发面试题
 ---
 
 <!-- @include: @article-header.snippet.md -->
@@ -110,14 +108,30 @@ ThreadLocalMap(ThreadLocal<?> firstKey, Object firstValue) {
 
 通过上面的内容我们已经知道：每个线程维护一个名为 `ThreadLocalMap` 的 map。 当你使用 `ThreadLocal` 存储值时，实际上是将值存储在当前线程的 `ThreadLocalMap` 中，其中 `ThreadLocal` 实例本身作为 key，而你要存储的值作为 value。
 
-`ThreadLocalMap` 的 `key` 和 `value` 引用机制：
+`ThreadLocal` 的 `set()` 方法源码如下：
 
-- **key 是弱引用**：`ThreadLocalMap` 中的 key 是 `ThreadLocal` 的弱引用 (`WeakReference<ThreadLocal<?>>`)。 这意味着，如果 `ThreadLocal` 实例不再被任何强引用指向，垃圾回收器会在下次 GC 时回收该实例，导致 `ThreadLocalMap` 中对应的 key 变为 `null`。
-- **value 是强引用**：`ThreadLocalMap` 中的 value 是强引用。 即使 key 被回收（变为 `null`），value 仍然存在于 `ThreadLocalMap` 中，被强引用，不会被回收。
+```java
+public void set(T value) {
+    Thread t = Thread.currentThread(); // 获取当前线程
+    ThreadLocalMap map = getMap(t);   // 获取当前线程的 ThreadLocalMap
+    if (map != null) {
+        map.set(this, value);         // 设置值
+    } else {
+        createMap(t, value);          // 创建新的 ThreadLocalMap
+    }
+}
+```
+
+`ThreadLocalMap` 的 `set()` 和 `createMap()` 方法中，并没有直接存储 `ThreadLocal` 对象本身，而是使用 `ThreadLocal` 的哈希值计算数组索引，最终存储于类型为`static class Entry extends WeakReference<ThreadLocal<?>>`的数组中。
+
+```java
+int i = key.threadLocalHashCode & (len-1);
+```
+
+`ThreadLocalMap` 的 `Entry` 定义如下：
 
 ```java
 static class Entry extends WeakReference<ThreadLocal<?>> {
-    /** The value associated with this ThreadLocal. */
     Object value;
 
     Entry(ThreadLocal<?> k, Object v) {
@@ -127,7 +141,12 @@ static class Entry extends WeakReference<ThreadLocal<?>> {
 }
 ```
 
-当 `ThreadLocal` 实例失去强引用后，其对应的 value 仍然存在于 `ThreadLocalMap` 中，因为 `Entry` 对象强引用了它。如果线程持续存活（例如线程池中的线程），`ThreadLocalMap` 也会一直存在，导致 key 为 `null` 的 entry 无法被垃圾回收，机会造成内存泄漏。
+`ThreadLocalMap` 的 `key` 和 `value` 引用机制：
+
+- **key 是弱引用**：`ThreadLocalMap` 中的 key 是 `ThreadLocal` 的弱引用 (`WeakReference<ThreadLocal<?>>`)。 这意味着，如果 `ThreadLocal` 实例不再被任何强引用指向，垃圾回收器会在下次 GC 时回收该实例，导致 `ThreadLocalMap` 中对应的 key 变为 `null`。
+- **value 是强引用**：即使 `key` 被 GC 回收，`value` 仍然被 `ThreadLocalMap.Entry` 强引用存在，无法被 GC 回收。
+
+当 `ThreadLocal` 实例失去强引用后，其对应的 value 仍然存在于 `ThreadLocalMap` 中，因为 `Entry` 对象强引用了它。如果线程持续存活（例如线程池中的线程），`ThreadLocalMap` 也会一直存在，导致 key 为 `null` 的 entry 无法被垃圾回收，即会造成内存泄漏。
 
 也就是说，内存泄漏的发生需要同时满足两个条件：
 
@@ -141,16 +160,30 @@ static class Entry extends WeakReference<ThreadLocal<?>> {
 1. 在使用完 `ThreadLocal` 后，务必调用 `remove()` 方法。 这是最安全和最推荐的做法。 `remove()` 方法会从 `ThreadLocalMap` 中显式地移除对应的 entry，彻底解决内存泄漏的风险。 即使将 `ThreadLocal` 定义为 `static final`，也强烈建议在每次使用后调用 `remove()`。
 2. 在线程池等线程复用的场景下，使用 `try-finally` 块可以确保即使发生异常，`remove()` 方法也一定会被执行。
 
-### 如何跨线程传递 ThreadLocal 的值？
+### ⭐️如何跨线程传递 ThreadLocal 的值？
 
-由于 `ThreadLocal` 的变量值存放在 `Thread` 里，而父子线程属于不同的 `Thread` 的。因此在异步场景下，父子线程的 `ThreadLocal` 值无法进行传递。
+**为什么 ThreadLocal 在异步场景下会失效？**
 
-如果想要在异步场景下传递 `ThreadLocal` 值，有两种解决方案：
+`ThreadLocal` 的值不在 `ThreadLocal` 对象中，而是存储在 `Thread` 里：
 
-- `InheritableThreadLocal` ：`InheritableThreadLocal` 是 JDK1.2 提供的工具，继承自 `ThreadLocal` 。使用 `InheritableThreadLocal` 时，会在创建子线程时，令子线程继承父线程中的 `ThreadLocal` 值，但是无法支持线程池场景下的 `ThreadLocal` 值传递。
-- `TransmittableThreadLocal` ： `TransmittableThreadLocal` （简称 TTL） 是阿里巴巴开源的工具类，继承并加强了`InheritableThreadLocal`类，可以在线程池的场景下支持 `ThreadLocal` 值传递。项目地址：<https://github.com/alibaba/transmittable-thread-local>。
+```java
+Thread → ThreadLocalMap → Entry(ThreadLocal, value)
+```
 
-#### `InheritableThreadLocal` 原理扩展
+`ThreadLocal` 数据结构如下图所示：
+
+![ThreadLocal 数据结构](https://oss.javaguide.cn/github/javaguide/java/concurrent/threadlocal-data-structure.png)
+
+异步执行往往意味着任务会从当前线程切换到另一个线程（例如线程池中的工作线程）执行。由于不同线程各自维护独立的 `ThreadLocalMap`，默认情况下 `ThreadLocal` 的上下文无法在异步执行中自动传递。
+
+**如何跨线程传递 ThreadLocal 的值？**
+
+为了解决这个问题，业界有两套主流的解决方案，一套是 JDK 原生的，另一套是阿里巴巴开源的。
+
+1. `InheritableThreadLocal` ：JDK1.2 提供的一个类，继承自 `ThreadLocal` 。使用 `InheritableThreadLocal` 时，会在创建子线程时，令子线程继承父线程中的 `ThreadLocal` 值，但是无法支持线程池场景下的 `ThreadLocal` 值传递。
+2. `TransmittableThreadLocal` ： `TransmittableThreadLocal` （简称 TTL） 是阿里巴巴开源的工具类，继承并加强了`InheritableThreadLocal`类，可以在线程池的场景下支持 `ThreadLocal` 值传递。项目地址：<https://github.com/alibaba/transmittable-thread-local>。
+
+#### InheritableThreadLocal 原理
 
 `InheritableThreadLocal` 实现了创建异步线程时，继承父线程 `ThreadLocal` 值的功能。该类是 JDK 团队提供的，通过改造 JDK 源码包中的 `Thread` 类来实现创建线程时，`ThreadLocal` 值的传递。
 
@@ -181,32 +214,175 @@ private void init(/* ... */) {
 }
 ```
 
-#### `TransmittableThreadLocal` 原理扩展
+**`InheritableThreadLocal` 的方案有什么问题？**
+
+这个方案的缺陷在于它的**一次性**，也就是它只在线程创建时发生一次复制。然而，现在的开发中，我们会大量使用线程池，但线程池里的线程是被复用的。
+
+想象一下，任务A在线程1中执行，把它的 `ThreadLocal` 值传给了线程池里的子线程2。任务A结束后，线程1去休息了。接着，任务B来了，它在线程3中执行，线程池又复用了刚才那个子线程2来执行任务B的一部分。此时，子线程2的`ThreadLocal`里还残留着任务A传给它的脏数据，而任务B（在线程3里）的上下文却完全没有传递过来。这就导致了数据污染和上下文丢失。
+
+#### TransmittableThreadLocal 原理
 
 JDK 默认没有支持线程池场景下 `ThreadLocal` 值传递的功能，因此阿里巴巴开源了一套工具 `TransmittableThreadLocal` 来实现该功能。
 
-阿里巴巴无法改动 JDK 的源码，因此他内部通过 **装饰器模式** 在原有的功能上做增强，以此来实现线程池场景下的 `ThreadLocal` 值传递。
+由于阿里巴巴无法改动 JDK 源码，TTL 巧妙地利用了**装饰器模式**对任务（`Runnable`/`Callable`）或线程池（`Executor`）进行增强，将上下文的传递时机从“线程创建时”延迟到了“任务提交与执行时”。
 
-TTL 改造的地方有两处：
+TTL 的核心逻辑可以概括为三个阶段（CRR）：
 
-- 实现自定义的 `Thread` ，在 `run()` 方法内部做 `ThreadLocal` 变量的赋值操作。
+- **Capture（捕获）**：在提交任务（如调用 `execute`）的一瞬间，`TtlRunnable` 会调用 `TransmittableThreadLocal.Transmitter.capture()`。它通过内部维护的 `holder` 集合，抓取当前父线程中所有活跃的 TTL 变量并存入快照。
+- **Replay（回放）**：在线程池的工作线程执行 `run()` 方法前，调用 `replay()`。它将快照中的值 `set` 到当前工作线程中，并备份该线程原有的旧值。
+- **Restore（恢复）**：任务执行结束后，调用 `restore()`。它根据备份将工作线程恢复到执行前的状态，防止上下文污染或内存泄漏。
 
-- 基于 **线程池** 进行装饰，在 `execute()` 方法中，不提交 JDK 内部的 `Thread` ，而是提交自定义的 `Thread` 。
+这张图是 TTL 官方提供的 CRR 整个过程的时序图：
 
-如果想要查看相关源码，可以引入 Maven 依赖进行下载。
+![TTL 官方提供的 CRR 整个过程的时序图](https://oss.javaguide.cn/github/javaguide/java/concurrent/ttl-crr-timing-diagram.png)
+
+不太好理解吧？可以看下我绘制的这张 CRR 时序图，更清晰直观一些：
+
+```mermaid
+sequenceDiagram
+    participant P as 父线程（Submitter）
+    participant W as TTL 包装器（TtlRunnable / Agent）
+    participant C as 线程池工作线程（Worker）
+
+    Note over P: 1. set context = "A"
+    P->>W: 2. 提交任务（Capture）
+    Note right of W: 捕获父线程中所有活跃的 TTL 变量快照
+
+    W->>C: 3. 执行任务 run()
+    Note over C: 4. Replay
+    Note right of C: 备份工作线程原有 TTL 值<br/>并设置 Capture 得到的值
+
+    Note over C: 5. 业务逻辑执行<br/>get context = "A"
+
+    Note over C: 6. Restore
+    Note right of C: 恢复工作线程原有 TTL 值<br/>防止上下文污染
+
+    C-->>P: 7. 任务执行结束
+
+```
+
+也就是说，TTL 的本质是在任务提交时 Capture 上下文，在任务执行前 Replay 上下文，在任务结束后 Restore 线程状态，从而安全地支持线程池中的 `ThreadLocal` 传递。
+
+TTL 提供了两种主要的接入方式，可根据侵入性要求和改造成本进行选择。
+
+**1. 显式包装（手动接入）**
+
+使用 `TtlRunnable.get(Runnable)` 或 `TtlCallable.get(Callable)` 对任务进行包装，使用 `TtlExecutors.getTtlExecutor(Executor)`、`getTtlExecutorService(...)` 对线程池进行包装。这种接入方式清晰可控，但需要业务代码配合，存在一定侵入性。
+
+下面这段代码展示了 TTL 通过 CRR，在支持线程池复用和拒绝策略的前提下，安全地传递并隔离 `ThreadLocal` 上下文。
+
+```java
+public class TtlContextHolder {
+    private static final Logger log = LoggerFactory.getLogger(TtlContextHolder.class);
+
+    // 1. 使用 static final 确保 TTL 实例不被重复创建，防止内存泄漏
+    // 重写 copy 方法（可选）：如果是引用类型，建议实现深拷贝
+    private static final TransmittableThreadLocal<String> CONTEXT = new TransmittableThreadLocal<String>() {
+        @Override
+        public String copy(String parentValue) {
+            // 默认是直接返回引用，如果是可变对象（如 Map），请在这里 new 新对象
+            return parentValue;
+        }
+    };
+
+    // 2. 线程池初始化：确保只被 TtlExecutors 包装一次
+    private static final ExecutorService TTL_EXECUTOR_SERVICE;
+
+    static {
+        ExecutorService rawExecutor = new ThreadPoolExecutor(
+                2, 4, 60L, TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>(1000), (Runnable r) -> new Thread(r, "ttl-worker-" + r.hashCode()),
+                new ThreadPoolExecutor.CallerRunsPolicy() // 关键：TTL 完美支持此拒绝策略
+        );
+        // 包装原始线程池
+        TTL_EXECUTOR_SERVICE = TtlExecutors.getTtlExecutorService(rawExecutor);
+    }
+
+    public static void main(String[] args) throws Exception {
+        try {
+            // 3. 在父线程中设置上下文
+            CONTEXT.set("value-set-in-parent");
+            log.info("父线程上下文: {}", CONTEXT.get());
+
+            // 4. 使用 Lambda 简化任务提交
+            TTL_EXECUTOR_SERVICE.submit(() -> {
+                log.info("异步任务(Runnable)读取上下文: {}", CONTEXT.get());
+                // 模拟业务逻辑
+                // 注意：子线程修改是否影响父线程，取决于 copy() 是否做了深拷贝
+                CONTEXT.set("value-modified-in-child");
+            });
+
+            Future<String> future = TTL_EXECUTOR_SERVICE.submit(() -> {
+                log.info("异步任务(Callable)读取上下文: {}", CONTEXT.get());
+                return "Success";
+            });
+
+            future.get();
+
+            // 5. 验证父线程上下文是否被污染
+            log.info("父线程最终上下文: {}", CONTEXT.get());
+
+        } finally {
+            // 6. 清理当前线程（父线程）的上下文，子线程的上下文由 TTL 的 Restore 机制自动恢复
+            CONTEXT.remove();
+        }
+    }
+}
+```
+
+输出：
+
+```ba
+09:06:31.438 INFO  [main] TtlContextHolder - 父线程上下文: value-set-in-parent
+09:06:31.452 INFO  [ttl-worker-1663166483] TtlContextHolder - 异步任务(Runnable)读取上下文: value-set-in-parent
+09:06:31.453 INFO  [ttl-worker-841283083] TtlContextHolder - 异步任务(Callable)读取上下文: value-set-in-parent
+09:06:31.453 INFO  [main] TtlContextHolder - 父线程最终上下文: value-set-in-parent
+```
+
+如果你想要测试这段代码，记得引入 TTL 的 Maven 依赖；
 
 ```XML
 <dependency>
     <groupId>com.alibaba</groupId>
     <artifactId>transmittable-thread-local</artifactId>
-    <version>2.12.0</version>
+    <version>2.14.4</version>
 </dependency>
+```
+
+**2. 无侵入接入（Java Agent）**
+
+通过 Java Agent 在类加载阶段对线程池相关类进行 字节码增强，自动织入 TTL 的上下文传递逻辑，实现业务代码零改造的上下文透传。这种方式业务代码无需感知 TTL 的存在，但实现复杂度相对较高。
+
+TTL Agent 默认修饰了以下 JDK 执行器组件：
+
+1. **标准线程池**：`java.util.concurrent.ThreadPoolExecutor` 和 `java.util.concurrent.ScheduledThreadPoolExecutor`。
+2. **ForkJoin 体系**：`java.util.concurrent.ForkJoinTask`（从而透明支持了 `CompletableFuture` 和 Java 8 并行流 `Stream`）。
+3. **遗留组件**：`java.util.TimerTask`（自 v2.7.0 起支持，v2.11.2 起默认开启）。
+
+在 Java 启动参数中加入 `-javaagent` 配置：
+
+```bash
+# 基础配置
+java -javaagent:path/to/transmittable-thread-local-2.x.y.jar \
+     -cp classes \
+     com.your.app.Main
 ```
 
 #### 应用场景
 
 1. **压测流量标记**： 在压测场景中，使用 `ThreadLocal` 存储压测标记，用于区分压测流量和真实流量。如果标记丢失，可能导致压测流量被错误地当成线上流量处理。
 2. **上下文传递**：在分布式系统中，传递链路追踪信息（如 Trace ID）或用户上下文信息。
+
+#### 总结
+
+`ThreadLocal` 的值默认是无法跨线程传递的，因为它的值是存在**每个 `Thread` 对象自己**的 `ThreadLocalMap` 里的，父子线程是两个不同的对象。
+
+为了解决这个问题，主要有两种方案：
+
+1. **JDK的 InheritableThreadLocal**：它会在**创建子线程**的时候，把父线程的值**复制**一份给子线程。但它的问题是，在**线程池**场景下会失效。因为线程池会**复用**线程，这会导致线程拿到的可能是上一个任务传下来的**脏数据**。
+2. **阿里的 TransmittableThreadLocal (TTL)**：这是我们项目里用的方案，它专门解决线程池的问题。它的原理是，在**提交任务**到线程池时，它会把父线程的 `ThreadLocal` 值**捕获**下来，和任务**绑定**在一起。等线程池里的某个线程要执行这个任务时，它再把捕获的值**设置**到这个线程上，任务执行完再**清理**掉。
+
+简单说，**InheritableThreadLocal是跟线程绑定的，只在创建时有效；而TTL是跟任务绑定的，完美支持线程池。**
 
 ## 线程池
 
@@ -218,21 +394,23 @@ TTL 改造的地方有两处：
 
 池化技术想必大家已经屡见不鲜了，线程池、数据库连接池、HTTP 连接池等等都是对这个思想的应用。池化技术的思想主要是为了减少每次获取资源的消耗，提高对资源的利用率。
 
-**线程池**提供了一种限制和管理资源（包括执行一个任务）的方式。 每个**线程池**还维护一些基本统计信息，例如已完成任务的数量。
+线程池提供了一种限制和管理资源（包括执行一个任务）的方式。 每个线程池还维护一些基本统计信息，例如已完成任务的数量。使用线程池主要带来以下几个好处：
 
-这里借用《Java 并发编程的艺术》提到的来说一下**使用线程池的好处**：
-
-- **降低资源消耗**。通过重复利用已创建的线程降低线程创建和销毁造成的消耗。
-- **提高响应速度**。当任务到达时，任务可以不需要等到线程创建就能立即执行。
-- **提高线程的可管理性**。线程是稀缺资源，如果无限制的创建，不仅会消耗系统资源，还会降低系统的稳定性，使用线程池可以进行统一的分配，调优和监控。
+1. **降低资源消耗**：线程池里的线程是可以重复利用的。一旦线程完成了某个任务，它不会立即销毁，而是回到池子里等待下一个任务。这就避免了频繁创建和销毁线程带来的开销。
+2. **提高响应速度**：因为线程池里通常会维护一定数量的核心线程（或者说“常驻工人”），任务来了之后，可以直接交给这些已经存在的、空闲的线程去执行，省去了创建线程的时间，任务能够更快地得到处理。
+3. **提高线程的可管理性**：线程池允许我们统一管理池中的线程。我们可以配置线程池的大小（核心线程数、最大线程数）、任务队列的类型和大小、拒绝策略等。这样就能控制并发线程的总量，防止资源耗尽，保证系统的稳定性。同时，线程池通常也提供了监控接口，方便我们了解线程池的运行状态（比如有多少活跃线程、多少任务在排队等），便于调优。
 
 ### 如何创建线程池？
 
-**方式一：通过`ThreadPoolExecutor`构造函数来创建（推荐）。**
+在 Java 中，创建线程池主要有两种方式：
 
-![通过构造方法实现](./images/java-thread-pool-summary/threadpoolexecutor构造函数.png)
+**方式一：通过 `ThreadPoolExecutor` 构造函数直接创建 (推荐)**
 
-**方式二：通过 `Executor` 框架的工具类 `Executors` 来创建。**
+![](https://oss.javaguide.cn/github/javaguide/java/concurrent/threadpoolexecutor-construtors.png)
+
+这是最推荐的方式，因为它允许开发者明确指定线程池的核心参数，对线程池的运行行为有更精细的控制，从而避免资源耗尽的风险。
+
+**方式二：通过 `Executors` 工具类创建 (不推荐用于生产环境)**
 
 `Executors`工具类提供的创建线程池的方法如下图所示：
 
@@ -255,23 +433,21 @@ TTL 改造的地方有两处：
 
 另外，《阿里巴巴 Java 开发手册》中强制线程池不允许使用 `Executors` 去创建，而是通过 `ThreadPoolExecutor` 构造函数的方式，这样的处理方式让写的同学更加明确线程池的运行规则，规避资源耗尽的风险
 
-`Executors` 返回线程池对象的弊端如下：
+`Executors` 返回线程池对象的弊端如下(后文会详细介绍到)：
 
-- `FixedThreadPool` 和 `SingleThreadExecutor`:使用的是有界阻塞队列是 `LinkedBlockingQueue` ，其任务队列的最大长度为 `Integer.MAX_VALUE` ，可能堆积大量的请求，从而导致 OOM。
+- `FixedThreadPool` 和 `SingleThreadExecutor`:使用的是阻塞队列 `LinkedBlockingQueue`，任务队列最大长度为 `Integer.MAX_VALUE`，可以看作是无界的，可能堆积大量的请求，从而导致 OOM。
 - `CachedThreadPool`:使用的是同步队列 `SynchronousQueue`, 允许创建的线程数量为 `Integer.MAX_VALUE` ，如果任务数量过多且执行速度较慢，可能会创建大量的线程，从而导致 OOM。
-- `ScheduledThreadPool` 和 `SingleThreadScheduledExecutor` :使用的无界的延迟阻塞队列 `DelayedWorkQueue` ，任务队列最大长度为 `Integer.MAX_VALUE` ，可能堆积大量的请求，从而导致 OOM。
+- `ScheduledThreadPool` 和 `SingleThreadScheduledExecutor`:使用的无界的延迟阻塞队列`DelayedWorkQueue`，任务队列最大长度为 `Integer.MAX_VALUE`,可能堆积大量的请求，从而导致 OOM。
 
 ```java
-// 有界队列 LinkedBlockingQueue
 public static ExecutorService newFixedThreadPool(int nThreads) {
-
+    // LinkedBlockingQueue 的默认长度为 Integer.MAX_VALUE，可以看作是无界的
     return new ThreadPoolExecutor(nThreads, nThreads,0L, TimeUnit.MILLISECONDS,new LinkedBlockingQueue<Runnable>());
 
 }
 
-// 无界队列 LinkedBlockingQueue
 public static ExecutorService newSingleThreadExecutor() {
-
+    // LinkedBlockingQueue 的默认长度为 Integer.MAX_VALUE，可以看作是无界的
     return new FinalizableDelegatedExecutorService (new ThreadPoolExecutor(1, 1,0L, TimeUnit.MILLISECONDS,new LinkedBlockingQueue<Runnable>()));
 
 }
@@ -370,8 +546,6 @@ public void allowCoreThreadTimeOut(boolean value) {
 
 当队列中有可用任务时，会唤醒被阻塞的线程，线程的状态会由 `WAITING` 状态变为 `RUNNABLE` 状态，之后去执行对应任务。
 
-#### 相关源码
-
 接下来通过相关源码，了解一下线程池内部是如何做的。
 
 线程在线程池内部被抽象为了 `Worker` ，当 `Worker` 被启动之后，会不断去任务队列中获取任务。
@@ -380,7 +554,7 @@ public void allowCoreThreadTimeOut(boolean value) {
 
 如果「设置了核心线程的存活时间」或者「线程数量超过了核心线程数量」，则将 `timed` 标记为 `true` ，表明获取任务时需要使用 `poll()` 指定超时时间。
 
-- `timed == true` ：使用 `poll()` 来获取任务。使用 `poll()` 方法获取任务超时的话，则当前线程会退出执行（ `TERMINATED` ），该线程从线程池中被移除。
+- `timed == true` ：使用 `poll(timeout, unit)` 来获取任务。使用 `poll(timeout, unit)` 方法获取任务超时的话，则当前线程会退出执行（ `TERMINATED` ），该线程从线程池中被移除。
 - `timed == false` ：使用 `take()` 来获取任务。使用 `take()` 方法获取任务会让当前线程一直阻塞等待（`WAITING`）。
 
 源码如下：
@@ -395,9 +569,9 @@ private Runnable getTask() {
         // 1、如果「设置了核心线程的存活时间」或者是「线程数量超过了核心线程数量」，则 timed 为 true。
         boolean timed = allowCoreThreadTimeOut || wc > corePoolSize;
         // 2、扣减线程数量。
-		// wc > maximuimPoolSize：线程池中的线程数量超过最大线程数量。其中 wc 为线程池中的线程数量。
-		// timed && timeOut：timeOut 表示获取任务超时。
-		// 分为两种情况：核心线程设置了存活时间 && 获取任务超时，则扣减线程数量；线程数量超过了核心线程数量 && 获取任务超时，则扣减线程数量。
+        // wc > maximuimPoolSize：线程池中的线程数量超过最大线程数量。其中 wc 为线程池中的线程数量。
+        // timed && timeOut：timeOut 表示获取任务超时。
+        // 分为两种情况：核心线程设置了存活时间 && 获取任务超时，则扣减线程数量；线程数量超过了核心线程数量 && 获取任务超时，则扣减线程数量。
         if ((wc > maximumPoolSize || (timed && timedOut))
             && (wc > 1 || workQueue.isEmpty())) {
             if (compareAndDecrementWorkerCount(c))
@@ -445,7 +619,7 @@ public static class CallerRunsPolicy implements RejectedExecutionHandler {
     }
 ```
 
-### 如果不允许丢弃任务任务，应该选择哪个拒绝策略？
+### 如果不允许丢弃任务，应该选择哪个拒绝策略？
 
 根据上面对线程池拒绝策略的介绍，相信大家很容易能够得出答案是：`CallerRunsPolicy` 。
 
@@ -562,7 +736,7 @@ public class ThreadPoolTest {
 
 ![将一部分任务保存到MySQL中](https://oss.javaguide.cn/github/javaguide/java/concurrent/threadpool-reject-2-threadpool-reject-02.png)
 
-整个实现逻辑还是比较简单的，核心在于自定义拒绝策略和阻塞队列。如此一来，一旦我们的线程池中线程以达到满载时，我们就可以通过拒绝策略将最新任务持久化到 MySQL 数据库中，等到线程池有了有余力处理所有任务时，让其优先处理数据库中的任务以避免"饥饿"问题。
+整个实现逻辑还是比较简单的，核心在于自定义拒绝策略和阻塞队列。如此一来，一旦我们的线程池中线程达到满载时，我们就可以通过拒绝策略将最新任务持久化到 MySQL 数据库中，等到线程池有了有余力处理所有任务时，让其优先处理数据库中的任务以避免"饥饿"问题。
 
 当然，对于这个问题，我们也可以参考其他主流框架的做法，以 Netty 为例，它的拒绝策略则是直接创建一个线程池以外的线程处理这些任务，为了保证任务的实时处理，这种做法可能需要良好的硬件设备且临时创建的线程无法做到准确的监控：
 
@@ -607,9 +781,9 @@ new RejectedExecutionHandler() {
 
 不同的线程池会选用不同的阻塞队列，我们可以结合内置线程池来分析。
 
-- 容量为 `Integer.MAX_VALUE` 的 `LinkedBlockingQueue`（有界阻塞队列）：`FixedThreadPool` 和 `SingleThreadExecutor` 。`FixedThreadPool`最多只能创建核心线程数的线程（核心线程数和最大线程数相等），`SingleThreadExecutor`只能创建一个线程（核心线程数和最大线程数都是 1），二者的任务队列永远不会被放满。
+- 容量为 `Integer.MAX_VALUE` 的 `LinkedBlockingQueue`（无界阻塞队列）：`FixedThreadPool` 和 `SingleThreadExecutor` 。`FixedThreadPool`最多只能创建核心线程数的线程（核心线程数和最大线程数相等），`SingleThreadExecutor`只能创建一个线程（核心线程数和最大线程数都是 1），二者的任务队列永远不会被放满。
 - `SynchronousQueue`（同步队列）：`CachedThreadPool` 。`SynchronousQueue` 没有容量，不存储元素，目的是保证对于提交的任务，如果有空闲线程，则使用空闲线程来处理；否则新建一个线程来处理任务。也就是说，`CachedThreadPool` 的最大线程数是 `Integer.MAX_VALUE` ，可以理解为线程数是可以无限扩展的，可能会创建大量线程，从而导致 OOM。
-- `DelayedWorkQueue`（延迟队列）：`ScheduledThreadPool` 和 `SingleThreadScheduledExecutor` 。`DelayedWorkQueue` 的内部元素并不是按照放入的时间排序，而是会按照延迟的时间长短对任务进行排序，内部采用的是“堆”的数据结构，可以保证每次出队的任务都是当前队列中执行时间最靠前的。`DelayedWorkQueue` 添加元素满了之后会自动扩容，增加原来容量的 50%，即永远不会阻塞，最大扩容可达 `Integer.MAX_VALUE`，所以最多只能创建核心线程数的线程。
+- `DelayedWorkQueue`（延迟队列）：`ScheduledThreadPool` 和 `SingleThreadScheduledExecutor` 。`DelayedWorkQueue` 的内部元素并不是按照放入的时间排序，而是会按照延迟的时间长短对任务进行排序，内部采用的是“堆”的数据结构，可以保证每次出队的任务都是当前队列中执行时间最靠前的。`DelayedWorkQueue` 是一个无界队列。其底层虽然是数组，但当数组容量不足时，它会自动进行扩容，因此队列永远不会被填满。当任务不断提交时，它们会全部被添加到队列中。这意味着线程池的线程数量永远不会超过其核心线程数，最大线程数参数对于使用该队列的线程池来说是无效的。
 - `ArrayBlockingQueue`（有界阻塞队列）：底层由数组实现，容量一旦创建，就不能修改。
 
 ### ⭐️线程池处理任务的流程了解吗？
@@ -734,7 +908,7 @@ CPU 密集型简单理解就是利用 CPU 计算能力的任务比如你在内�
 
 美团技术团队的思路是主要对线程池的核心参数实现自定义可配置。这三个核心参数是：
 
-- **`corePoolSize` :** 核心线程数线程数定义了最小可以同时运行的线程数量。
+- **`corePoolSize` :** 核心线程数定义了最小可以同时运行的线程数量。
 - **`maximumPoolSize` :** 当队列中存放的任务达到队列容量的时候，当前可以同时运行的线程数量变为最大线程数。
 - **`workQueue`:** 当新任务来的时候会先判断当前运行的线程数量是否达到核心线程数，如果达到的话，新任务就会被存放在队列中。
 
@@ -754,7 +928,7 @@ CPU 密集型简单理解就是利用 CPU 计算能力的任务比如你在内�
 
 ![动态配置线程池参数最终效果](https://oss.javaguide.cn/github/javaguide/java/concurrent/meituan-dynamically-configuring-thread-pool-parameters.png)
 
-还没看够？我在[《后端面试高频系统设计&场景题》](https://javaguide.cn/zhuanlan/back-end-interview-high-frequency-system-design-and-scenario-questions.html#%E4%BB%8B%E7%BB%8D)中详细介绍了如何设计一个动态线程池，这也是面试中常问的一道系统设计题。
+还没看够？我在[《后端面试高频系统设计&场景题》](https://javaguide.cn/zhuanlan/back-end-interview-high-frequency-system-design-and-scenario-questions.html)中详细介绍了如何设计一个动态线程池，这也是面试中常问的一道系统设计题。
 
 ![《后端面试高频系统设计&场景题》](https://oss.javaguide.cn/xingqiu/back-end-interview-high-frequency-system-design-and-scenario-questions-fengmian.png)
 
@@ -796,7 +970,7 @@ CPU 密集型简单理解就是利用 CPU 计算能力的任务比如你在内�
 
 重点是要掌握 `CompletableFuture` 的使用以及常见面试题。
 
-除了下面的面试题之外，还推荐你看看我写的这篇文章： [CompletableFuture 详解](./completablefuture-intro.md)。
+除了下面的面试题之外，还推荐你看看我写的这篇文章： [CompletableFuture 详解](https://javaguide.cn/java/concurrent/completablefuture-intro.html)。
 
 ### Future 类有什么用？
 
@@ -866,9 +1040,11 @@ public FutureTask(Runnable runnable, V result) {
 
 `FutureTask`相当于对`Callable` 进行了封装，管理着任务执行的情况，存储了 `Callable` 的 `call` 方法的任务执行结果。
 
+关于更多 `Future` 的源码细节，可以肝这篇万字解析，写的很清楚：[Java 是如何实现 Future 模式的？万字详解！](https://juejin.cn/post/6844904199625375757)。
+
 ### CompletableFuture 类有什么用？
 
-`Future` 在实际使用过程中存在一些局限性比如不支持异步任务的编排组合、获取计算结果的 `get()` 方法为阻塞调用。
+`Future` 在实际使用过程中存在一些局限性，比如不支持异步任务的编排组合、获取计算结果的 `get()` 方法为阻塞调用。
 
 Java 8 才被引入`CompletableFuture` 类可以解决`Future` 的这些缺陷。`CompletableFuture` 除了提供了更为好用和强大的 `Future` 特性之外，还提供了函数式编程、异步任务编排组合（可以将多个异步任务串联起来，组成一个完整的链式调用）等能力。
 
@@ -916,7 +1092,7 @@ bothCompleted.thenRunAsync(() -> System.out.println("T3 is executing after T1 an
 ThreadUtil.sleep(3000);
 ```
 
-通过 `CompletableFuture` 的 `allOf()`这个静态方法来并行运行 T1 和 T2 。当 T1 和
+通过 `CompletableFuture` 的 `allOf()` 这个静态方法来并行运行 T1 和 T2，当 T1 和 T2 都完成后，再执行 T3。
 
 ### ⭐️使用 CompletableFuture，有一个任务失败，如何处理异常？
 
@@ -954,7 +1130,7 @@ CompletableFuture.runAsync(() -> {
 
 ## AQS
 
-关于 AQS 源码的详细分析，可以看看这一篇文章：[AQS 详解](./aqs.md)。
+关于 AQS 源码的详细分析，可以看看这一篇文章：[AQS 详解](https://javaguide.cn/java/concurrent/aqs.html)。
 
 ### AQS 是什么？
 
@@ -1198,7 +1374,7 @@ CompletableFuture<Void> allFutures = CompletableFuture.allOf(
 
 `CyclicBarrier` 和 `CountDownLatch` 非常类似，它也可以实现线程间的技术等待，但是它的功能比 `CountDownLatch` 更加复杂和强大。主要应用场景和 `CountDownLatch` 类似。
 
-> `CountDownLatch` 的实现是基于 AQS 的，而 `CycliBarrier` 是基于 `ReentrantLock`(`ReentrantLock` 也属于 AQS 同步器)和 `Condition` 的。
+> `CountDownLatch` 的实现是基于 AQS 的，而 `CyclicBarrier` 是基于 `ReentrantLock`(`ReentrantLock` 也属于 AQS 同步器)和 `Condition` 的。
 
 `CyclicBarrier` 的字面意思是可循环使用（Cyclic）的屏障（Barrier）。它要做的事情是：让一组线程到达一个屏障（也可以叫同步点）时被阻塞，直到最后一个线程到达屏障时，屏障才会开门，所有被屏障拦截的线程才会继续干活。
 
@@ -1328,9 +1504,13 @@ public int await() throws InterruptedException, BrokenBarrierException {
 
 ## 虚拟线程
 
-虚拟线程在 Java 21 正式发布，这是一项重量级的更新。
+虚拟线程在 Java 21 正式发布，这是一项重量级的更新。虽然目前面试中问的不多，但还是建议大家去简单了解一下。我写了一篇文章来总结虚拟线程常见的问题：[虚拟线程常见问题总结](https://javaguide.cn/java/concurrent/virtual-thread.html)，包含下面这些问题：
 
-虽然目前面试中问的不多，但还是建议大家去简单了解一下，具体可以阅读这篇文章：[虚拟线程极简入门](./virtual-thread.md) 。重点搞清楚虚拟线程和平台线程的关系以及虚拟线程的优势即可。
+1. 什么是虚拟线程？
+2. 虚拟线程和平台线程有什么关系？
+3. 虚拟线程有什么优点和缺点？
+4. 如何创建虚拟线程？
+5. 虚拟线程的底层原理是什么？
 
 ## 参考
 

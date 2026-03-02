@@ -1,8 +1,13 @@
 ---
 title: 计算机网络常见面试题总结(上)
+description: 最新计算机网络高频面试题总结（上）：TCP/IP四层模型、HTTP全版本对比、TCP三次握手、DNS解析、WebSocket/SSE实时推送等，附图解+⭐️重点标注，一文搞定应用层&传输层&网络层核心考点，快速备战后端面试！
 category: 计算机基础
 tag:
   - 计算机网络
+head:
+  - - meta
+    - name: keywords
+      content: 计算机网络面试题,TCP/IP四层模型,HTTP面试,HTTPS vs HTTP,HTTP/1.1 vs HTTP/2,HTTP/3 QUIC,TCP三次握手,UDP区别,DNS解析,WebSocket vs SSE,GET vs POST,应用层协议,网络分层,队头阻塞,PING命令,ARP协议
 ---
 
 <!-- @include: @small-advertisement.snippet.md -->
@@ -27,7 +32,7 @@ tag:
 
 ![osi七层模型2](https://oss.javaguide.cn/github/javaguide/osi七层模型2.png)
 
-#### TCP/IP 四层模型是什么？每一层的作用是什么？
+#### ⭐️TCP/IP 四层模型是什么？每一层的作用是什么？
 
 **TCP/IP 四层模型** 是目前被广泛采用的一种模型,我们可以将 TCP / IP 模型看作是 OSI 七层模型的精简版本，由以下 4 层组成：
 
@@ -40,7 +45,7 @@ tag:
 
 ![TCP/IP 四层模型](https://oss.javaguide.cn/github/javaguide/cs-basics/network/tcp-ip-4-model.png)
 
-关于每一层作用的详细介绍，请看 [OSI 和 TCP/IP 网络分层模型详解（基础）](./osi-and-tcp-ip-model.md) 这篇文章。
+关于每一层作用的详细介绍，请看 [OSI 和 TCP/IP 网络分层模型详解（基础）](https://javaguide.cn/cs-basics/network/osi-and-tcp-ip-model.html) 这篇文章。
 
 #### 为什么网络要分层？
 
@@ -64,7 +69,7 @@ tag:
 
 ### 常见网络协议
 
-#### 应用层有哪些常见的协议？
+#### ⭐️应用层有哪些常见的协议？
 
 ![应用层常见协议](https://oss.javaguide.cn/github/javaguide/cs-basics/network/application-layer-protocol.png)
 
@@ -75,7 +80,7 @@ tag:
 - **Telnet（远程登陆协议）**：基于 TCP 协议，用于通过一个终端登陆到其他服务器。Telnet 协议的最大缺点之一是所有数据（包括用户名和密码）均以明文形式发送，这有潜在的安全风险。这就是为什么如今很少使用 Telnet，而是使用一种称为 SSH 的非常安全的网络传输协议的主要原因。
 - **SSH（Secure Shell Protocol，安全的网络传输协议）**：基于 TCP 协议，通过加密和认证机制实现安全的访问和文件传输等业务
 - **RTP（Real-time Transport Protocol，实时传输协议）**：通常基于 UDP 协议，但也支持 TCP 协议。它提供了端到端的实时传输数据的功能，但不包含资源预留存、不保证实时传输质量，这些功能由 WebRTC 实现。
-- **DNS（Domain Name System，域名管理系统）**: 基于 UDP 协议，用于解决域名和 IP 地址的映射问题。
+- **DNS（Domain Name System，域名管理系统）**: 通常基于 UDP 协议（端口 53），用于解决域名和 IP 地址的映射问题。当响应数据过大或进行区域传送时会改用 TCP。
 
 关于这些协议的详细介绍请看 [应用层常见协议总结（应用层）](./application-layer-protocol.md) 这篇文章。
 
@@ -100,7 +105,7 @@ tag:
 
 ## HTTP
 
-### 从输入 URL 到页面展示到底发生了什么？（非常重要）
+### ⭐️从输入 URL 到页面展示到底发生了什么？（非常重要）
 
 > 类似的问题：打开一个网页，整个过程会使用哪些协议？
 
@@ -120,15 +125,15 @@ tag:
 6. 浏览器收到 HTTP 响应报文后，解析响应体中的 HTML 代码，渲染网页的结构和样式，同时根据 HTML 中的其他资源的 URL（如图片、CSS、JS 等），再次发起 HTTP 请求，获取这些资源的内容，直到网页完全加载显示。
 7. 浏览器在不需要和服务器通信时，可以主动关闭 TCP 连接，或者等待服务器的关闭请求。
 
-详细介绍可以查看这篇文章：[访问网页的全过程（知识串联）](./the-whole-process-of-accessing-web-pages.md)（强烈推荐）。
+详细介绍可以查看这篇文章：[访问网页的全过程（知识串联）](https://javaguide.cn/cs-basics/network/the-whole-process-of-accessing-web-pages.html)（强烈推荐）。
 
-### HTTP 状态码有哪些？
+### ⭐️HTTP 状态码有哪些？
 
 HTTP 状态码用于描述 HTTP 请求的结果，比如 2xx 就代表请求被成功处理。
 
 ![常见 HTTP 状态码](https://oss.javaguide.cn/github/javaguide/cs-basics/network/http-status-code.png)
 
-关于 HTTP 状态码更详细的总结，可以看我写的这篇文章：[HTTP 常见状态码总结（应用层）](./http-status-codes.md)。
+关于 HTTP 状态码更详细的总结，可以看我写的这篇文章：[HTTP 常见状态码总结（应用层）](https://javaguide.cn/cs-basics/network/http-status-codes.html)。
 
 ### HTTP Header 中常见的字段有哪些？
 
@@ -167,7 +172,7 @@ HTTP 状态码用于描述 HTTP 请求的结果，比如 2xx 就代表请求被�
 | Via                 | 向服务器告知，这个请求是由哪些代理发出的。                                                                                                                                    | Via: 1.0 fred, 1.1 example.com (Apache/1.1)                                      |
 | Warning             | 一个一般性的警告，告知，在实体内容体中可能存在错误。                                                                                                                          | Warning: 199 Miscellaneous warning                                               |
 
-### HTTP 和 HTTPS 有什么区别？（重要）
+### ⭐️HTTP 和 HTTPS 有什么区别？（重要）
 
 ![HTTP 和 HTTPS 对比](https://oss.javaguide.cn/github/javaguide/cs-basics/network/http-vs-https.png)
 
@@ -176,7 +181,7 @@ HTTP 状态码用于描述 HTTP 请求的结果，比如 2xx 就代表请求被�
 - **安全性和资源消耗**：HTTP 协议运行在 TCP 之上，所有传输的内容都是明文，客户端和服务器端都无法验证对方的身份。HTTPS 是运行在 SSL/TLS 之上的 HTTP 协议，SSL/TLS 运行在 TCP 之上。所有传输的内容都经过加密，加密采用对称加密，但对称加密的密钥用服务器方的证书进行了非对称加密。所以说，HTTP 安全性没有 HTTPS 高，但是 HTTPS 比 HTTP 耗费更多服务器资源。
 - **SEO（搜索引擎优化）**：搜索引擎通常会更青睐使用 HTTPS 协议的网站，因为 HTTPS 能够提供更高的安全性和用户隐私保护。使用 HTTPS 协议的网站在搜索结果中可能会被优先显示，从而对 SEO 产生影响。
 
-关于 HTTP 和 HTTPS 更详细的对比总结，可以看我写的这篇文章：[HTTP vs HTTPS（应用层）](./http-vs-https.md) 。
+关于 HTTP 和 HTTPS 更详细的对比总结，可以看我写的这篇文章：[HTTP vs HTTPS（应用层）](https://javaguide.cn/cs-basics/network/http-vs-https.html) 。
 
 ### HTTP/1.0 和 HTTP/1.1 有什么区别？
 
@@ -188,14 +193,15 @@ HTTP 状态码用于描述 HTTP 请求的结果，比如 2xx 就代表请求被�
 - **带宽**：HTTP/1.0 中，存在一些浪费带宽的现象，例如客户端只是需要某个对象的一部分，而服务器却将整个对象送过来了，并且不支持断点续传功能，HTTP/1.1 则在请求头引入了 range 头域，它允许只请求资源的某个部分，即返回码是 206（Partial Content），这样就方便了开发者自由的选择以便于充分利用带宽和连接。
 - **Host 头（Host Header）处理** :HTTP/1.1 引入了 Host 头字段，允许在同一 IP 地址上托管多个域名，从而支持虚拟主机的功能。而 HTTP/1.0 没有 Host 头字段，无法实现虚拟主机。
 
-关于 HTTP/1.0 和 HTTP/1.1 更详细的对比总结，可以看我写的这篇文章：[HTTP/1.0 vs HTTP/1.1（应用层）](./http1.0-vs-http1.1.md) 。
+关于 HTTP/1.0 和 HTTP/1.1 更详细的对比总结，可以看我写的这篇文章：[HTTP/1.0 vs HTTP/1.1（应用层）](https://javaguide.cn/cs-basics/network/http1.0-vs-http1.1.html) 。
 
-### HTTP/1.1 和 HTTP/2.0 有什么区别？
+### ⭐️HTTP/1.1 和 HTTP/2.0 有什么区别？
 
 ![HTTP/1.0 和 HTTP/1.1 对比](https://oss.javaguide.cn/github/javaguide/cs-basics/network/http1.1-vs-http2.0.png)
 
-- **多路复用（Multiplexing）**：HTTP/2.0 在同一连接上可以同时传输多个请求和响应（可以看作是 HTTP/1.1 中长链接的升级版本），互不干扰。HTTP/1.1 则使用串行方式，每个请求和响应都需要独立的连接，而浏览器为了控制资源会有 6-8 个 TCP 连接的限制。。这使得 HTTP/2.0 在处理多个请求时更加高效，减少了网络延迟和提高了性能。
+- **多路复用（Multiplexing）**：HTTP/2.0 在同一连接上可以同时传输多个请求和响应（可以看作是 HTTP/1.1 中长链接的升级版本），互不干扰。HTTP/1.1 则使用串行方式，每个请求和响应都需要独立的连接，而浏览器为了控制资源会有 6-8 个 TCP 连接的限制。这使得 HTTP/2.0 在处理多个请求时更加高效，减少了网络延迟和提高了性能。
 - **二进制帧（Binary Frames）**：HTTP/2.0 使用二进制帧进行数据传输，而 HTTP/1.1 则使用文本格式的报文。二进制帧更加紧凑和高效，减少了传输的数据量和带宽消耗。
+- **队头阻塞**：HTTP/2 引入了多路复用技术，允许多个请求和响应在单个 TCP 连接上并行交错传输，解决了 HTTP/1.1 应用层的队头阻塞问题，但 HTTP/2 依然受到 TCP 层队头阻塞 的影响。
 - **头部压缩（Header Compression）**：HTTP/1.1 支持`Body`压缩，`Header`不支持压缩。HTTP/2.0 支持对`Header`压缩，使用了专门为`Header`压缩而设计的 HPACK 算法，减少了网络开销。
 - **服务器推送（Server Push）**：HTTP/2.0 支持服务器推送，可以在客户端请求一个资源时，将其他相关资源一并推送给客户端，从而减少了客户端的请求次数和延迟。而 HTTP/1.1 需要客户端自己发送请求来获取相关资源。
 
@@ -203,7 +209,7 @@ HTTP/2.0 多路复用效果图（图源： [HTTP/2 For Web Developers](https://b
 
 ![HTTP/2 Multiplexing](https://oss.javaguide.cn/github/javaguide/cs-basics/network/http2.0-multiplexing.png)
 
-可以看到，HTTP/2.0 的多路复用使得不同的请求可以共用一个 TCP 连接，避免建立多个连接带来不必要的额外开销，而 HTTP/1.1 中的每个请求都会建立一个单独的连接
+可以看到，HTTP/2 的多路复用机制允许多个请求和响应共享一个 TCP 连接，从而避免了 HTTP/1.1 在应对并发请求时需要建立多个并行连接的情况，减少了重复连接建立和维护的额外开销。而在 HTTP/1.1 中，尽管支持持久连接，但为了缓解队头阻塞问题，浏览器通常会为同一域名建立多个并行连接。
 
 ### HTTP/2.0 和 HTTP/3.0 有什么区别？
 
@@ -232,15 +238,89 @@ HTTP/1.0、HTTP/2.0 和 HTTP/3.0 的协议栈比较：
 
 关于 HTTP/1.0 -> HTTP/3.0 更详细的演进介绍，推荐阅读[HTTP1 到 HTTP3 的工程优化](https://dbwu.tech/posts/http_evolution/)。
 
-### HTTP 是不保存状态的协议, 如何保存用户状态?
+### HTTP/1.1 和 HTTP/2.0 的队头阻塞有什么不同？
 
-HTTP 是一种不保存状态，即无状态（stateless）协议。也就是说 HTTP 协议自身不对请求和响应之间的通信状态进行保存。那么我们如何保存用户状态呢？Session 机制的存在就是为了解决这个问题，Session 的主要作用就是通过服务端记录用户的状态。典型的场景是购物车，当你要添加商品到购物车的时候，系统不知道是哪个用户操作的，因为 HTTP 协议是无状态的。服务端给特定的用户创建特定的 Session 之后就可以标识这个用户并且跟踪这个用户了（一般情况下，服务器会在一定时间内保存这个 Session，过了时间限制，就会销毁这个 Session）。
+HTTP/1.1 队头阻塞的主要原因是无法多路复用：
 
-在服务端保存 Session 的方法很多，最常用的就是内存和数据库(比如是使用内存数据库 redis 保存)。既然 Session 存放在服务器端，那么我们如何实现 Session 跟踪呢？大部分情况下，我们都是通过在 Cookie 中附加一个 Session ID 来方式来跟踪。
+- 在一个 TCP 连接中，资源的请求和响应是按顺序处理的。如果一个大的资源（如一个大文件）正在传输，后续的小资源（如较小的 CSS 文件）需要等待前面的资源传输完成后才能被发送。
+- 如果浏览器需要同时加载多个资源（如多个 CSS、JS 文件等），它通常会开启多个并行的 TCP 连接（一般限制为 6 个）。但每个连接仍然受限于顺序的请求-响应机制，因此仍然会发生 **应用层的队头阻塞**。
 
-**Cookie 被禁用怎么办?**
+虽然 HTTP/2.0 引入了多路复用技术，允许多个请求和响应在单个 TCP 连接上并行交错传输，解决了 **HTTP/1.1 应用层的队头阻塞问题**，但 HTTP/2.0 依然受到 **TCP 层队头阻塞** 的影响：
 
-最常用的就是利用 URL 重写把 Session ID 直接附加在 URL 路径的后面。
+- HTTP/2.0 通过帧（frame）机制将每个资源分割成小块，并为每个资源分配唯一的流 ID，这样多个资源的数据可以在同一 TCP 连接中交错传输。
+- TCP 作为传输层协议，要求数据按顺序交付。如果某个数据包在传输过程中丢失，即使后续的数据包已经到达，也必须等待丢失的数据包重传后才能继续处理。这种传输层的顺序性导致了 **TCP 层的队头阻塞**。
+- 举例来说，如果 HTTP/2 的一个 TCP 数据包中携带了多个资源的数据（例如 JS 和 CSS），而该数据包丢失了，那么后续数据包中的所有资源数据都需要等待丢失的数据包重传回来，导致所有流（streams）都被阻塞。
+
+最后，来一张表格总结补充一下：
+
+| **方面**       | **HTTP/1.1 的队头阻塞**                  | **HTTP/2.0 的队头阻塞**                                          |
+| -------------- | ---------------------------------------- | ---------------------------------------------------------------- |
+| **层级**       | 应用层（HTTP 协议本身的限制）            | 传输层（TCP 协议的限制）                                         |
+| **根本原因**   | 无法多路复用，请求和响应必须按顺序传输   | TCP 要求数据包按顺序交付，丢包时阻塞整个连接                     |
+| **受影响范围** | 单个 HTTP 请求/响应会阻塞后续请求/响应。 | 单个 TCP 包丢失会影响所有 HTTP/2.0 流(依赖于同一个底层 TCP 连接) |
+| **缓解方法**   | 开启多个并行的 TCP 连接                  | 减少网络掉包或者使用基于 UDP 的 QUIC 协议                        |
+| **影响场景**   | 每次都会发生，尤其是大文件阻塞小文件时。 | 丢包率较高的网络环境下更容易发生。                               |
+
+### ⭐️HTTP 是不保存状态的协议, 如何保存用户状态?
+
+HTTP 协议本身是 **无状态的 (stateless)** 。这意味着服务器默认情况下无法区分两个连续的请求是否来自同一个用户，或者同一个用户之前的操作是什么。这就像一个“健忘”的服务员，每次你跟他说话，他都不知道你是谁，也不知道你之前点过什么菜。
+
+但在实际的 Web 应用中，比如网上购物、用户登录等场景，我们显然需要记住用户的状态（例如购物车里的商品、用户的登录信息）。为了解决这个问题，主要有以下几种常用机制：
+
+**方案一：Session (会话) 配合 Cookie (主流方式)：**
+
+![](https://oss.javaguide.cn/github/javaguide/system-design/security/session-cookie-authentication-process.png)
+
+这可以说是最经典也是最常用的方法了。基本流程是这样的：
+
+1. 用户向服务器发送用户名、密码、验证码用于登陆系统。
+2. 服务器验证通过后，会为这个用户创建一个专属的 Session 对象（可以理解为服务器上的一块内存，存放该用户的状态数据，如购物车、登录信息等）存储起来，并给这个 Session 分配一个唯一的 `SessionID`。
+3. 服务器通过 HTTP 响应头中的 `Set-Cookie` 指令，把这个 `SessionID` 发送给用户的浏览器。
+4. 浏览器接收到 `SessionID` 后，会将其以 Cookie 的形式保存在本地。当用户保持登录状态时，每次向该服务器发请求，浏览器都会自动带上这个存有 `SessionID` 的 Cookie。
+5. 服务器收到请求后，从 Cookie 中拿出 `SessionID`，就能找到之前保存的那个 Session 对象，从而知道这是哪个用户以及他之前的状态了。
+
+使用 Session 的时候需要注意下面几个点：
+
+- **客户端 Cookie 支持**：依赖 Session 的核心功能要确保用户浏览器开启了 Cookie。
+- **Session 过期管理**：合理设置 Session 的过期时间，平衡安全性和用户体验。
+- **Session ID 安全**：为包含 `SessionID` 的 Cookie 设置 `HttpOnly` 标志可以防止客户端脚本（如 JavaScript）窃取，设置 Secure 标志可以保证 `SessionID` 只在 HTTPS 连接下传输，增加安全性。
+
+Session 数据本身存储在服务器端。常见的存储方式有：
+
+- **服务器内存**:实现简单，访问速度快，但服务器重启数据会丢失，且不利于多服务器间的负载均衡。这种方式适合简单且用户量不大的业务场景。
+- **数据库 (如 MySQL, PostgreSQL)**:数据持久化，但读写性能相对较低，一般不会使用这种方式。
+- **分布式缓存 (如 Redis)**:性能高，支持分布式部署，是目前大规模应用中非常主流的方案。
+
+**方案二：当 Cookie 被禁用时：URL 重写 (URL Rewriting)**
+
+如果用户的浏览器禁用了 Cookie，或者某些情况下不便使用 Cookie，还有一种备选方案是 URL 重写。这种方式会将 `SessionID` 直接附加到 URL 的末尾，作为参数传递。例如：<http://www.example.com/page?sessionid=xxxxxx>。服务器端会解析 URL 中的 `sessionid` 参数来获取 `SessionID`，进而找到对应的 Session 数据。
+
+这种方法一般不会使用，存在以下缺点：
+
+- URL 会变长且不美观；
+- `SessionID` 暴露在 URL 中，安全性较低（容易被复制、分享或记录在日志中）；
+- 对搜索引擎优化 (SEO) 可能不友好。
+
+**方案三：Token-based 认证 (如 JWT - JSON Web Tokens)**
+
+这是一种越来越流行的无状态认证方式，尤其适用于前后端分离的架构和微服务。
+
+![ JWT 身份验证示意图](https://oss.javaguide.cn/github/javaguide/system-design/jwt/jwt-authentication%20process.png)
+
+以 JWT 为例（普通 Token 方案也可以），简化后的步骤如下
+
+1. 用户向服务器发送用户名、密码以及验证码用于登陆系统；
+2. 如果用户用户名、密码以及验证码校验正确的话，服务端会返回已经签名的 Token，也就是 JWT；
+3. 客户端收到 Token 后自己保存起来（比如浏览器的 `localStorage` ）；
+4. 用户以后每次向后端发请求都在 Header 中带上这个 JWT ；
+5. 服务端检查 JWT 并从中获取用户相关信息。
+
+JWT 详细介绍可以查看这两篇文章：
+
+- [JWT 基础概念详解](https://javaguide.cn/system-design/security/jwt-intro.html)
+- [JWT 身份认证优缺点分析](https://javaguide.cn/system-design/security/advantages-and-disadvantages-of-jwt.html)
+
+总结来说，虽然 HTTP 本身是无状态的，但通过 Cookie + Session、URL 重写或 Token 等机制，我们能够有效地在 Web 应用中跟踪和管理用户状态。其中，**Cookie + Session 是最传统也最广泛使用的方式，而 Token-based 认证则在现代 Web 应用中越来越受欢迎。**
 
 ### URI 和 URL 的区别是什么?
 
@@ -251,13 +331,11 @@ URI 的作用像身份证号一样，URL 的作用更像家庭住址一样。URL
 
 ### Cookie 和 Session 有什么区别？
 
-准确点来说，这个问题属于认证授权的范畴，你可以在 [认证授权基础概念详解](../../system-design/security/basis-of-authority-certification.md) 这篇文章中找到详细的答案。
+准确点来说，这个问题属于认证授权的范畴，你可以在 [认证授权基础概念详解](https://javaguide.cn/system-design/security/basis-of-authority-certification.html) 这篇文章中找到详细的答案。
 
-### GET 和 POST 的区别
+### ⭐️GET 和 POST 的区别
 
 这个问题在知乎上被讨论的挺火热的，地址：<https://www.zhihu.com/question/28586791> 。
-
-![](https://static001.geekbang.org/infoq/04/0454a5fff1437c32754f1dfcc3881148.png)
 
 GET 和 POST 是 HTTP 协议中两种常用的请求方法，它们在不同的场景和目的下有不同的特点和用法。一般来说，可以从以下几个方面来区分二者（重点搞清两者在语义上的区别即可）：
 
@@ -290,7 +368,7 @@ WebSocket 协议本质上是应用层的协议，用于弥补 HTTP 协议在持�
 - 社交聊天
 - ……
 
-### WebSocket 和 HTTP 有什么区别？
+### ⭐️WebSocket 和 HTTP 有什么区别？
 
 WebSocket 和 HTTP 两者都是基于 TCP 的应用层协议，都可以在网络中传输数据。
 
@@ -312,23 +390,70 @@ WebSocket 的工作过程可以分为以下几个步骤：
 
 另外，建立 WebSocket 连接之后，通过心跳机制来保持 WebSocket 连接的稳定性和活跃性。
 
-### SSE 与 WebSocket 有什么区别？
+### ⭐️WebSocket 与短轮询、长轮询的区别
 
-> 摘自[Web 实时消息推送详解](https://javaguide.cn/system-design/web-real-time-message-push.html)。
+这三种方式，都是为了解决“**客户端如何及时获取服务器最新数据，实现实时更新**”的问题。它们的实现方式和效率、实时性差异较大。
 
-SSE 与 WebSocket 作用相似，都可以建立服务端与浏览器之间的通信，实现服务端向客户端推送消息，但还是有些许不同：
+**1.短轮询（Short Polling）**
 
-- SSE 是基于 HTTP 协议的，它们不需要特殊的协议或服务器实现即可工作；WebSocket 需单独服务器来处理协议。
-- SSE 单向通信，只能由服务端向客户端单向通信；WebSocket 全双工通信，即通信的双方可以同时发送和接受信息。
-- SSE 实现简单开发成本低，无需引入其他组件；WebSocket 传输数据需做二次解析，开发门槛高一些。
-- SSE 默认支持断线重连；WebSocket 则需要自己实现。
-- SSE 只能传送文本消息，二进制数据需要经过编码后传送；WebSocket 默认支持传送二进制数据。
+- **原理**：客户端每隔固定时间（如 5 秒）发起一次 HTTP 请求，询问服务器是否有新数据。服务器收到请求后立即响应。
+- **优点**：实现简单，兼容性好，直接用常规 HTTP 请求即可。
+- **缺点**：
+  - **实时性一般**：消息可能在两次轮询间到达，用户需等到下次请求才知晓。
+  - **资源浪费大**：反复建立/关闭连接，且大多数请求收到的都是“无新消息”，极大增加服务器和网络压力。
 
-**SSE 与 WebSocket 该如何选择？**
+**2.长轮询（Long Polling）**
 
-SSE 好像一直不被大家所熟知，一部分原因是出现了 WebSocket，这个提供了更丰富的协议来执行双向、全双工通信。对于游戏、即时通信以及需要双向近乎实时更新的场景，拥有双向通道更具吸引力。
+- **原理**：客户端发起请求后，若服务器暂时无新数据，则会保持连接，直到有新数据或超时才响应。客户端收到响应后立即发起下一次请求，实现“伪实时”。
+- **优点**：
+  - **实时性较好**：一旦有新数据可立即推送，无需等待下次定时请求。
+  - **空响应减少**：减少了无效的空响应，提升了效率。
+- **缺点**：
+  - **服务器资源占用高**：需长时间维护大量连接，消耗服务器线程/连接数。
+  - **资源浪费大**：每次响应后仍需重新建立连接，且依然基于 HTTP 单向请求-响应机制。
 
-但是，在某些情况下，不需要从客户端发送数据。而你只需要一些服务器操作的更新。比如：站内信、未读消息数、状态更新、股票行情、监控数量等场景，SSE 不管是从实现的难易和成本上都更加有优势。此外，SSE 具有 WebSocket 在设计上缺乏的多种功能，例如：自动重新连接、事件 ID 和发送任意事件的能力。
+**3. WebSocket**
+
+- **原理**：客户端与服务器通过一次 HTTP Upgrade 握手后，建立一条持久的 TCP 连接。之后，双方可以随时、主动地发送数据，实现真正的全双工、低延迟通信。
+- **优点**：
+  - **实时性强**：数据可即时双向收发，延迟极低。
+  - **资源效率高**：连接持续，无需反复建立/关闭，减少资源消耗。
+  - **功能强大**：支持服务端主动推送消息、客户端主动发起通信。
+- **缺点**：
+  - **使用限制**：需要服务器和客户端都支持 WebSocket 协议。对连接管理有一定要求（如心跳保活、断线重连等）。
+  - **实现麻烦**：实现起来比短轮询和长轮询要更麻烦一些。
+
+![Websocket 示意图](https://oss.javaguide.cn/github/javaguide/system-design/web-real-time-message-push/1460000042192394.png)
+
+### ⭐️SSE 与 WebSocket 有什么区别？
+
+SSE (Server-Sent Events) 和 WebSocket 都是用来实现服务器向浏览器实时推送消息的技术，让网页内容能自动更新，而不需要用户手动刷新。虽然目标相似，但它们在工作方式和适用场景上有几个关键区别：
+
+1. **通信方式:**
+   - **SSE:** **单向通信**。只有服务器能向客户端（浏览器）发送数据。客户端不能通过同一个连接向服务器发送数据（需要发起新的 HTTP 请求）。
+   - **WebSocket:** **双向通信 (全双工)**。客户端和服务器可以随时互相发送消息，实现真正的实时交互。
+2. **底层协议:**
+   - **SSE:** 基于**标准的 HTTP/HTTPS 协议**。它本质上是一个“长连接”的 HTTP 请求，服务器保持连接打开并持续发送事件流。不需要特殊的服务器或协议支持，现有的 HTTP 基础设施就能用。
+   - **WebSocket:** 使用**独立的 ws:// 或 wss:// 协议**。它需要通过一个特定的 HTTP "Upgrade" 请求来建立连接，并且服务器需要明确支持 WebSocket 协议来处理连接和消息帧。
+3. **实现复杂度和成本:**
+   - **SSE:** **实现相对简单**，主要在服务器端处理。浏览器端有标准的 EventSource API，使用方便。开发和维护成本较低。
+   - **WebSocket:** **稍微复杂一些**。需要服务器端专门处理 WebSocket 连接和协议，客户端也需要使用 WebSocket API。如果需要考虑兼容性、心跳、重连等，开发成本会更高。
+4. **断线重连:**
+   - **SSE:** **浏览器原生支持**。EventSource API 提供了自动断线重连的机制。
+   - **WebSocket:** **需要手动实现**。开发者需要自己编写逻辑来检测断线并进行重连尝试。
+5. **数据类型:**
+   - **SSE:** **主要设计用来传输文本** (UTF-8 编码)。如果需要传输二进制数据，需要先进行 Base64 等编码转换成文本。
+   - **WebSocket:** **原生支持传输文本和二进制数据**，无需额外编码。
+
+为了提供更好的用户体验和利用其简单、高效、基于标准 HTTP 的特性，**Server-Sent Events (SSE) 是目前大型语言模型 API（如 OpenAI、DeepSeek 等）实现流式响应的常用甚至可以说是标准的技术选择**。
+
+这里以 DeepSeek 为例，我们发送一个请求并打开浏览器控制台验证一下：
+
+![DeepSeek 响应标头](https://oss.javaguide.cn/github/javaguide/cs-basics/network/deepseek-sse.png)
+
+![](https://oss.javaguide.cn/github/javaguide/cs-basics/network/deepseek-sse-eventstream.png)
+
+可以看到，响应头应里包含了 `text/event-stream`，说明使用的确实是 SSE。并且，响应数据也确实是持续分块传输。
 
 ## PING
 
@@ -399,13 +524,14 @@ DNS 服务器自底向上可以依次分为以下几个层级(所有 DNS 服务�
 
 世界上并不是只有 13 台根服务器，这是很多人普遍的误解，网上很多文章也是这么写的。实际上，现在根服务器数量远远超过这个数量。最初确实是为 DNS 根服务器分配了 13 个 IP 地址，每个 IP 地址对应一个不同的根 DNS 服务器。然而，由于互联网的快速发展和增长，这个原始的架构变得不太适应当前的需求。为了提高 DNS 的可靠性、安全性和性能，目前这 13 个 IP 地址中的每一个都有多个服务器，截止到 2023 年底，所有根服务器之和达到了 1700 多台，未来还会继续增加。
 
-### DNS 解析的过程是什么样的？
+### ⭐️DNS 解析的过程是什么样的？
 
-整个过程的步骤比较多，我单独写了一篇文章详细介绍：[DNS 域名系统详解（应用层）](./dns.md) 。
+整个过程的步骤比较多，我单独写了一篇文章详细介绍：[DNS 域名系统详解（应用层）](https://javaguide.cn/cs-basics/network/dns.html) 。
 
 ### DNS 劫持了解吗？如何应对？
 
 DNS 劫持是一种网络攻击，它通过修改 DNS 服务器的解析结果，使用户访问的域名指向错误的 IP 地址，从而导致用户无法访问正常的网站，或者被引导到恶意的网站。DNS 劫持有时也被称为 DNS 重定向、DNS 欺骗或 DNS 污染。
+
 ## 参考
 
 - 《图解 HTTP》

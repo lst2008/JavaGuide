@@ -1,8 +1,13 @@
 ---
 title: Java内存区域详解（重点）
+description: JVM内存区域详解：深入剖析Java运行时数据区（堆、方法区、虚拟机栈、本地方法栈、程序计数器）、对象创建过程、内存分配策略、对象访问定位方式。
 category: Java
 tag:
   - JVM
+head:
+  - - meta
+    - name: keywords
+      content: JVM内存区域,运行时数据区,堆内存,方法区,虚拟机栈,程序计数器,对象创建,Java内存模型
 ---
 
 <!-- @include: @small-advertisement.snippet.md -->
@@ -51,6 +56,43 @@ Java 虚拟机规范对于运行时数据区域的规定是相当宽松的。以
 
 ### 程序计数器
 
+```mermaid
+graph LR
+    %% 颜色定义
+    classDef main fill:#005D7B,color:#fff,rx:10,ry:10;
+    classDef feature fill:#00838F,color:#fff,rx:10,ry:10;
+    classDef function fill:#4CA497,color:#fff,rx:10,ry:10;
+    classDef state fill:#E99151,color:#fff,rx:10,ry:10;
+    classDef lifecycle fill:#E4C189,color:#333,rx:10,ry:10;
+    classDef warning fill:#C44545,color:#fff,rx:10,ry:10;
+
+    %% 核心节点
+    Root(JVM 程序计数器):::main
+
+    %% 分支1：基本特性
+    Root --> Attr[核心特性]:::feature
+    Attr --> Attr1[线程私有/独立存储]:::feature
+    Attr --> Attr2[较小内存空间]:::feature
+
+    %% 分支2：核心功能
+    Root --> Func[主要功能]:::function
+    Func --> Func1[代码流程控制: 分支/循环/异常]:::function
+    Func --> Func2[线程恢复: 记录切换位置]:::function
+
+    %% 分支3：执行状态
+    Root --> Run[执行状态]:::state
+    Run --> Run1[Java方法: 记录字节码指令地址]:::state
+    Run --> Run2[Native方法: Undefined]:::state
+
+    %% 分支4：生命周期与异常
+    Root --> Life[生命周期与异常]:::lifecycle
+    Life --> Life1[随线程创建而创建/销毁]:::lifecycle
+    Life --> Life2[唯一不报 OutOfMemoryError 区域]:::warning
+
+    %% 线条样式
+    linkStyle default stroke:#005D7B,stroke-width:1.5px,opacity:0.8
+```
+
 程序计数器是一块较小的内存空间，可以看作是当前线程所执行的字节码的行号指示器。字节码解释器工作时通过改变这个计数器的值来选取下一条需要执行的字节码指令，分支、循环、跳转、异常处理、线程恢复等功能都需要依赖这个计数器来完成。
 
 另外，为了线程切换后能恢复到正确的执行位置，每条线程都需要有一个独立的程序计数器，各线程之间计数器互不影响，独立存储，我们称这类内存区域为“线程私有”的内存。
@@ -60,9 +102,46 @@ Java 虚拟机规范对于运行时数据区域的规定是相当宽松的。以
 - 字节码解释器通过改变程序计数器来依次读取指令，从而实现代码的流程控制，如：顺序执行、选择、循环、异常处理。
 - 在多线程的情况下，程序计数器用于记录当前线程执行的位置，从而当线程被切换回来的时候能够知道该线程上次运行到哪儿了。
 
-⚠️ 注意：程序计数器是唯一一个不会出现 `OutOfMemoryError` 的内存区域，它的生命周期随着线程的创建而创建，随着线程的结束而死亡。
+程序计数器的生命周期与线程完全同步：
+
+- **创建**：随着线程的创建而创建。
+- **销毁**：随着线程的结束而销毁。
+
+在执行 **Java 方法**（非 native）时，程序计数器记录的是 **当前正在执行的 JVM 字节码指令的地址**。当线程执行的是一个 **native 方法**（本地方法）时，程序计数器的值为 **Undefined（未定义）**。这是因为 native 方法不执行 JVM 字节码，而是通过 JNI 调用本地平台的底层代码，JVM 无需再跟踪字节码地址。
+
+⚠️ 注意：程序计数器是 JVM 规范中唯一没有规定任何 `OutOfMemoryError` 情况的内存区域。这是因为它的内存占用极小且固定，不会出现内存溢出的情况。
 
 ### Java 虚拟机栈
+
+```mermaid
+graph LR
+    %% 颜色定义
+    classDef main fill:#005D7B,color:#fff,rx:10,ry:10;
+    classDef compare fill:#00838F,color:#fff,rx:10,ry:10;
+    classDef structure fill:#4CA497,color:#fff,rx:10,ry:10;
+    classDef error fill:#C44545,color:#fff,rx:10,ry:10;
+
+    %% 核心节点
+    Root(虚拟机栈<br/>Java Stack):::main
+
+    %% 分支1：定义与对比
+    Root --> Comp[基本特征]:::compare
+    Comp --> Comp1[线程私有，随线程创建/销毁]:::compare
+    Comp --> Comp2[服务对象: Java 方法]:::compare
+    Comp --> Comp3[栈帧先进后出]:::compare
+
+    %% 分支2：栈帧结构
+    Root --> Struct[栈帧结构]:::structure
+    Struct --> S1[局部变量表、操作数栈、动态链接、出口信息]:::structure
+
+    %% 分支3：异常情况
+    Root --> Err[异常情况]:::error
+    Err --> Err1[StackOverflowError: 栈深度溢出]:::error
+    Err --> Err2[OutOfMemoryError: 内存扩展失败]:::error
+
+    %% 线条样式
+    linkStyle default stroke:#005D7B,stroke-width:1.5px,opacity:0.8
+```
 
 与程序计数器一样，Java 虚拟机栈（后文简称栈）也是线程私有的，它的生命周期和线程相同，随着线程的创建而创建，随着线程的死亡而死亡。
 
@@ -80,24 +159,63 @@ Java 虚拟机规范对于运行时数据区域的规定是相当宽松的。以
 
 **操作数栈** 主要作为方法调用的中转站使用，用于存放方法执行过程中产生的中间计算结果。另外，计算过程中产生的临时变量也会放在操作数栈中。
 
-**动态链接** 主要服务一个方法需要调用其他方法的场景。Class 文件的常量池里保存有大量的符号引用比如方法引用的符号引用。当一个方法要调用其他方法，需要将常量池中指向方法的符号引用转化为其在内存地址中的直接引用。动态链接的作用就是为了将符号引用转换为调用方法的直接引用，这个过程也被称为 **动态连接** 。
+**动态链接**是 Java 虚拟机实现方法调用的关键机制之一。在 Class 文件中，方法调用以**符号引用**的形式存在于常量池。为了执行调用，这些符号引用必须被转换为内存中的**直接引用**。这个转换过程分为两种情况：对于静态方法、私有方法等在编译期就能确定版本的方法，这个转换在**类加载的解析阶段**就完成了，这称为**静态解析**。而对于需要根据对象实际类型才能确定具体实现的**虚方法**（这是实现多态的基础），这个转换过程则被推迟到**程序运行期间**，由**动态链接**来完成。因此，**动态链接**的核心作用是**在运行时解析虚方法的调用点，将其链接到正确的方法版本上**。
 
 ![](https://oss.javaguide.cn/github/javaguide/jvmimage-20220331175738692.png)
 
 栈空间虽然不是无限的，但一般正常调用的情况下是不会出现问题的。不过，如果函数调用陷入无限循环的话，就会导致栈中被压入太多栈帧而占用太多空间，导致栈空间过深。那么当线程请求栈的深度超过当前 Java 虚拟机栈的最大深度的时候，就抛出 `StackOverFlowError` 错误。
 
-Java 方法有两种返回方式，一种是 return 语句正常返回，一种是抛出异常。不管哪种返回方式，都会导致栈帧被弹出。也就是说， **栈帧随着方法调用而创建，随着方法结束而销毁。无论方法正常完成还是异常完成都算作方法结束。**
+**Java 方法有两种返回方式**：
 
-除了 `StackOverFlowError` 错误之外，栈还可能会出现`OutOfMemoryError`错误，这是因为如果栈的内存大小可以动态扩展， 如果虚拟机在动态扩展栈时无法申请到足够的内存空间，则抛出`OutOfMemoryError`异常。
+- **正常返回**：执行return语句，返回值传递给调用者。
+- **异常返回**：方法执行过程中抛出异常且未被捕获。
+
+不管哪种返回方式，都会导致栈帧被弹出。也就是说， **栈帧随着方法调用而创建，随着方法结束而销毁。无论方法正常完成还是异常完成都算作方法结束。**
+
+除了 `StackOverFlowError` 错误之外，栈还可能会出现`OutOfMemoryError`错误，这是因为如果栈的内存大小可以动态扩展， 那么当虚拟机在动态扩展栈时无法申请到足够的内存空间，则抛出`OutOfMemoryError`异常。
 
 简单总结一下程序运行中栈可能会出现两种错误：
 
-- **`StackOverFlowError`：** 若栈的内存大小不允许动态扩展，那么当线程请求栈的深度超过当前 Java 虚拟机栈的最大深度的时候，就抛出 `StackOverFlowError` 错误。
-- **`OutOfMemoryError`：** 如果栈的内存大小可以动态扩展， 如果虚拟机在动态扩展栈时无法申请到足够的内存空间，则抛出`OutOfMemoryError`异常。
+- **`StackOverFlowError`：** 如果栈的内存大小不允许动态扩展，那么当线程请求栈的深度超过当前 Java 虚拟机栈的最大深度的时候，就抛出 `StackOverFlowError` 错误。
+- **`OutOfMemoryError`：** 如果栈的内存大小可以动态扩展， 那么当虚拟机在动态扩展栈时无法申请到足够的内存空间，则抛出`OutOfMemoryError`异常。
 
 ![](https://oss.javaguide.cn/github/javaguide/java/jvm/%E3%80%8A%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3%E8%99%9A%E6%8B%9F%E6%9C%BA%E3%80%8B%E7%AC%AC%E4%B8%89%E7%89%88%E7%9A%84%E7%AC%AC2%E7%AB%A0-%E8%99%9A%E6%8B%9F%E6%9C%BA%E6%A0%88.png)
 
 ### 本地方法栈
+
+```mermaid
+graph LR
+    %% 颜色定义
+    classDef main fill:#005D7B,color:#fff,rx:10,ry:10;
+    classDef compare fill:#00838F,color:#fff,rx:10,ry:10;
+    classDef structure fill:#4CA497,color:#fff,rx:10,ry:10;
+    classDef implement fill:#E99151,color:#fff,rx:10,ry:10;
+    classDef error fill:#C44545,color:#fff,rx:10,ry:10;
+
+    %% 核心节点
+    Root(本地方法栈):::main
+
+    %% 分支1：定义与对比
+    Root --> Comp[定义与对比]:::compare
+    Comp --> Comp1[作用与虚拟机栈相似]:::compare
+    Comp --> Comp2[服务对象: Native 方法]:::compare
+
+    %% 分支2：HotSpot 实现
+    Root --> Imp[虚拟机实现]:::implement
+    Imp --> Imp1[HotSpot 与虚拟机栈合二为一]:::implement
+
+    %% 分支3：栈帧结构
+    Root --> Struct[栈帧内容]:::structure
+    Struct --> S1[局部变量表、操作数栈、动态链接、出口信息]:::structure
+
+    %% 分支4：异常情况
+    Root --> Err[异常与内存]:::error
+    Err --> Err1[StackOverflowError: 栈深度溢出]:::error
+    Err --> Err2[OutOfMemoryError: 内存扩展失败]:::error
+
+    %% 线条样式
+    linkStyle default stroke:#005D7B,stroke-width:1.5px,opacity:0.8
+```
 
 和虚拟机栈所发挥的作用非常相似，区别是：**虚拟机栈为虚拟机执行 Java 方法 （也就是字节码）服务，而本地方法栈则为虚拟机使用到的 Native 方法服务。** 在 HotSpot 虚拟机中和 Java 虚拟机栈合二为一。
 
@@ -106,6 +224,40 @@ Java 方法有两种返回方式，一种是 return 语句正常返回，一种�
 方法执行完毕后相应的栈帧也会出栈并释放内存空间，也会出现 `StackOverFlowError` 和 `OutOfMemoryError` 两种错误。
 
 ### 堆
+
+```mermaid
+graph LR
+    %% 颜色定义
+    classDef main fill:#005D7B,color:#fff,rx:10,ry:10;
+    classDef compare fill:#00838F,color:#fff,rx:10,ry:10;
+    classDef structure fill:#4CA497,color:#fff,rx:10,ry:10;
+    classDef implement fill:#E99151,color:#fff,rx:10,ry:10;
+    classDef error fill:#C44545,color:#fff,rx:10,ry:10;
+
+    %% 核心节点
+    Root(Java 堆):::main
+
+    %% 分支1：基本定义与地位
+    Root --> Def[定义与地位]:::compare
+    Def --> Def1[JVM 内存中最大区域]:::compare
+    Def --> Def2[所有线程共享]:::compare
+    Def --> Def3[虚拟机启动时创建，生命周期长]:::compare
+
+    %% 分支2：核心用途
+    Root --> Use[核心用途]:::structure
+    Use --> Use1[存放对象实例（非静态字段）]:::structure
+    Use --> Use2[存放数组数据]:::structure
+    Use --> Use3[对象内存统一管理]:::structure
+
+    %% 分3：分代结构 (GC 堆)
+    Root --> GC[分代结构]:::implement
+    GC --> GC1[新生代：Eden 区 + 两个 Survivor 区]:::implement
+    GC --> GC2[老年代：Old Generation]:::implement
+    GC --> GC3[目的：优化垃圾回收效率]:::implement
+
+    %% 线条样式
+    linkStyle default stroke:#005D7B,stroke-width:1.5px,opacity:0.8
+```
 
 Java 虚拟机所管理的内存中最大的一块，Java 堆是所有线程共享的一块内存区域，在虚拟机启动时创建。**此内存区域的唯一目的就是存放对象实例，几乎所有的对象实例以及数组都在这里分配内存。**
 
@@ -173,11 +325,57 @@ MaxTenuringThreshold of 20 is invalid; must be between 0 and 15
 
 ### 方法区
 
+```mermaid
+graph LR
+    %% 颜色定义
+    classDef main fill:#005D7B,color:#fff,rx:10,ry:10;
+    classDef compare fill:#00838F,color:#fff,rx:10,ry:10;
+    classDef structure fill:#4CA497,color:#fff,rx:10,ry:10;
+    classDef implement fill:#E99151,color:#fff,rx:10,ry:10;
+    classDef error fill:#C44545,color:#fff,rx:10,ry:10;
+
+    %% 核心节点
+    Root(方法区):::main
+
+    %% 分支1：基本定义与地位
+    Root --> Def[定义与地位]:::compare
+    Def --> Def1[线程共享的内存区域]:::compare
+    Def --> Def2[JVM 规范定义的逻辑区域]:::compare
+    Def --> Def3[具体实现随虚拟机而异]:::compare
+
+    %% 分支2：核心存储内容
+    Root --> Store[核心存储内容]:::structure
+    Store --> Store1[类的元数据: 结构/字段/方法信息]:::structure
+    Store --> Store2[方法的字节码: 原始指令序列]:::structure
+    Store --> Store3[运行时常量池: 字面量与符号引用]:::structure
+
+    %% 分支3：HotSpot 位置演变 (JDK 7+)
+    Root --> Change[位置演变与例外]:::implement
+    Change --> Change1[静态变量: 移至 Java 堆（JDK 7）]:::implement
+    Change --> Change2[字符串常量池: 移至 Java 堆（JDK 7）]:::implement
+    Change --> Change3[JIT 代码缓存: 独立 Code Cache 区域]:::implement
+
+    %% 线条样式
+    linkStyle default stroke:#005D7B,stroke-width:1.5px,opacity:0.8
+```
+
 方法区属于是 JVM 运行时数据区域的一块逻辑区域，是各个线程共享的内存区域。
 
 《Java 虚拟机规范》只是规定了有方法区这么个概念和它的作用，方法区到底要如何实现那就是虚拟机自己要考虑的事情了。也就是说，在不同的虚拟机实现上，方法区的实现是不同的。
 
-当虚拟机要使用一个类时，它需要读取并解析 Class 文件获取相关信息，再将信息存入到方法区。方法区会存储已被虚拟机加载的 **类信息、字段信息、方法信息、常量、静态变量、即时编译器编译后的代码缓存等数据**。
+当虚拟机加载一个类时，它会从 Class 文件中解析出相应的信息，并将这些**元数据**存入方法区。具体来说，方法区主要存储以下核心数据：
+
+1. **类的元数据**：包括类的完整结构，如类名、父类、实现的接口、访问修饰符，以及字段和方法的详细信息（名称、类型、修饰符等）。
+2. **方法的字节码**：每个方法的原始指令序列。
+3. **运行时常量池**：每个类独有的，由 Class 文件中的常量池转换而来，用于存放编译期生成的各种字面量和对类型、字段、方法的符号引用。
+
+需要特别注意的是，以下几类数据虽然在逻辑上与类相关，但在 HotSpot 虚拟机中，它们并不存储在方法区内：
+
+- **静态变量（Static Variables）**：自 JDK 7 起，静态变量已从方法区（永久代）**移至 Java 堆（Heap）中**，与该类的 `java.lang.Class` 对象一起存放。
+- **字符串常量池（String Pool）**：同样自 JDK 7 起，字符串常量池也**移至 Java 堆中**。
+- **即时编译器编译后的代码缓存（JIT Code Cache）**：JIT 编译器将热点方法的字节码编译成的本地机器码，存放在一个**独立的、名为“Code Cache”的内存区域**，而不是方法区本身。这样做是为了实现更高效的执行和内存管理。
+
+![method-area-jdk1.7](https://oss.javaguide.cn/github/javaguide/java/jvm/method-area-jdk1.7.png)
 
 **方法区和永久代以及元空间是什么关系呢？** 方法区和永久代以及元空间的关系很像 Java 中接口和类的关系，类实现了接口，这里的类就可以看作是永久代和元空间，接口可以看作是方法区，也就是说永久代以及元空间是 HotSpot 虚拟机对虚拟机规范中方法区的两种实现方式。并且，永久代是 JDK 1.8 之前的方法区实现，JDK 1.8 及以后方法区的实现变成了元空间。
 
@@ -223,6 +421,37 @@ JDK 1.8 的时候，方法区（HotSpot 的永久代）被彻底移除了（JDK1
 
 ### 运行时常量池
 
+```mermaid
+graph LR
+    %% 颜色定义
+    classDef main fill:#005D7B,color:#fff,rx:10,ry:10;
+    classDef compare fill:#00838F,color:#fff,rx:10,ry:10;
+    classDef structure fill:#4CA497,color:#fff,rx:10,ry:10;
+    classDef implement fill:#E99151,color:#fff,rx:10,ry:10;
+    classDef error fill:#C44545,color:#fff,rx:10,ry:10;
+
+    %% 核心节点
+    Root(运行时常量池):::main
+
+    %% 分支1：来源与地位
+    Root --> Source[定义与地位]:::compare
+    Source --> Source1[源自 Class 文件的常量池表]:::compare
+    Source --> Source2[类加载后存入方法区]:::compare
+    Source --> Source3[功能类似于高级符号表]:::compare
+
+    %% 分支2：存储内容分类
+    Root --> Content[存储内容]:::structure
+    Content --> Content1[字面量: 文本字符串/常量值等]:::structure
+    Content --> Content2[符号引用: 类/字段/方法的描述]:::structure
+
+    %% 分支3：异常处理
+    Root --> Error[异常情况]:::error
+    Error --> Error2[无法申请内存时抛出 OutOfMemoryError]:::error
+
+    %% 线条样式
+    linkStyle default stroke:#005D7B,stroke-width:1.5px,opacity:0.8
+```
+
 Class 文件中除了有类的版本、字段、方法、接口等描述信息外，还有用于存放编译期生成的各种字面量（Literal）和符号引用（Symbolic Reference）的 **常量池表(Constant Pool Table)** 。
 
 字面量是源代码中的固定值的表示法，即通过字面我们就能知道其值的含义。字面量包括整数、浮点数和字符串字面量。常见的符号引用包括类符号引用、字段符号引用、方法符号引用、接口方法符号。
@@ -239,13 +468,47 @@ Class 文件中除了有类的版本、字段、方法、接口等描述信息�
 
 ### 字符串常量池
 
+```mermaid
+graph LR
+    %% 颜色定义
+    classDef main fill:#005D7B,color:#fff,rx:10,ry:10;
+    classDef compare fill:#00838F,color:#fff,rx:10,ry:10;
+    classDef structure fill:#4CA497,color:#fff,rx:10,ry:10;
+    classDef implement fill:#E99151,color:#fff,rx:10,ry:10;
+    classDef error fill:#C44545,color:#fff,rx:10,ry:10;
+
+    %% 核心节点
+    Root(字符串常量池):::main
+
+    %% 分支1：内存位置演进
+    Root --> History[内存位置演进]:::compare
+    History --> Hist1[JDK 1.6: 存在于永久代 PermGen]:::compare
+    History --> Hist2[JDK 1.7+: 移至堆 Heap 中]:::compare
+    History --> Hist3[目的: 避免永久代 OOM 且方便 GC]:::compare
+
+    %% 分支2：底层实现结构
+    Root --> Impl[底层实现机制]:::structure
+    Impl --> Impl1[StringTable: 本质是 HashTable]:::structure
+    Impl --> Impl2[Key: 字符串内容 Hash / Value: 对象引用]:::structure
+    Impl --> Impl3[固定长度的数组 + 链表结构]:::structure
+
+    %% 分支3：风险与调优
+    Root --> Tuning[风险与调优]:::error
+    Tuning --> Risk1[StringTable 过小导致 Hash 冲突严重]:::error
+    Tuning --> Risk2[大量 intern 导致性能下降]:::error
+    Tuning --> Param[-XX:StringTableSize 调优参数]:::error
+
+    %% 线条样式
+    linkStyle default stroke:#005D7B,stroke-width:1.5px,opacity:0.8
+```
+
 **字符串常量池** 是 JVM 为了提升性能和减少内存消耗针对字符串（String 类）专门开辟的一块区域，主要目的是为了避免字符串的重复创建。
 
 ```java
-// 在字符串常量池中创建字符串对象 ”ab“
-// 将字符串对象 ”ab“ 的引用赋值给给 aa
+// 1.在字符串常量池中查询字符串对象 "ab"，如果没有则创建"ab"并放入字符串常量池
+// 2.将字符串对象 "ab" 的引用赋值给 aa
 String aa = "ab";
-// 直接返回字符串常量池中字符串对象 ”ab“，赋值给引用 bb
+// 直接返回字符串常量池中字符串对象 "ab"，赋值给引用 bb
 String bb = "ab";
 System.out.println(aa==bb); // true
 ```
@@ -270,6 +533,40 @@ JDK1.7 之前，字符串常量池存放在永久代。JDK1.7 字符串常量池
 
 ### 直接内存
 
+```mermaid
+graph LR
+    %% 颜色定义
+    classDef main fill:#005D7B,color:#fff,rx:10,ry:10;
+    classDef compare fill:#00838F,color:#fff,rx:10,ry:10;
+    classDef structure fill:#4CA497,color:#fff,rx:10,ry:10;
+    classDef implement fill:#E99151,color:#fff,rx:10,ry:10;
+    classDef error fill:#C44545,color:#fff,rx:10,ry:10;
+
+    %% 核心节点
+    Root(直接内存):::main
+
+    %% 分支1：定义与地位
+    Root --> Source[定义与地位]:::compare
+    Source --> Source1[非运行时数据区的一部分]:::compare
+    Source --> Source2[非 JVM 规范定义的内存区域]:::compare
+    Source --> Source3[通过 JNI 在本地内存分配]:::compare
+
+    %% 分支2：核心优势
+    Root --> Advantage[核心优势]:::implement
+    Advantage --> Adv1[避免 Java 堆与 Native 堆来回复制数据]:::implement
+    Advantage --> Adv2[显著提高 I/O 性能]:::implement
+    Advantage --> Adv3[减少垃圾回收对应用的影响]:::implement
+
+    %% 分支3：限制与异常
+    Root --> Error[限制与异常]:::error
+    Error --> Error1[不受 Java 堆大小限制]:::error
+    Error --> Error2[受本机总内存及寻址空间限制]:::error
+    Error --> Error3[内存不足时抛出 OutOfMemoryError]:::error
+
+    %% 线条样式
+    linkStyle default stroke:#005D7B,stroke-width:1.5px,opacity:0.8
+```
+
 直接内存是一种特殊的内存缓冲区，并不在 Java 堆或方法区中分配的，而是通过 JNI 的方式在本地内存上分配的。
 
 直接内存并不是虚拟机运行时数据区的一部分，也不是虚拟机规范中定义的内存区域，但是这部分内存也被频繁地使用。而且也可能导致 `OutOfMemoryError` 错误出现。
@@ -289,6 +586,45 @@ JDK1.4 中新加入的 **NIO（Non-Blocking I/O，也被称为 New I/O）**，�
 ### 对象的创建
 
 Java 对象的创建过程我建议最好是能默写出来，并且要掌握每一步在做什么。
+
+```mermaid
+graph TD
+    %% 颜色定义
+    classDef root fill:#004D61,color:#fff,rx:10,ry:10;
+    classDef step fill:#005D7B,color:#fff,rx:10,ry:10;
+    classDef detail fill:#4CA497,color:#fff,rx:10,ry:10;
+    classDef logic fill:#E99151,color:#fff,rx:10,ry:10;
+
+    %% 核心流程
+    Start(new 指令触发):::root
+
+    Start --> S1[Step 1: 类加载检查]:::step
+    S1 --> S1_1[检查常量池是否有类符号引用]:::detail
+    S1_1 --> S1_2[检查类是否已加载/解析/初始化]:::detail
+
+    S1_2 --> S2[Step 2: 分配内存]:::step
+    S2 --> S2_Method{分配方式}:::logic
+    S2_Method -->|堆内存规整| S2_A[指针碰撞]:::logic
+    S2_Method -->|堆内存交错| S2_B[空闲列表]:::logic
+    S2_A & S2_B --> S2_Safe[并发安全: TLAB 或 CAS 重试]:::detail
+
+    S2_Safe --> S3[Step 3: 初始化零值]:::step
+    S3 --> S3_1[将分配到的内存空间初始化为 0]:::detail
+    S3_1 --> S3_2[保证实例字段不赋初值即可直接使用]:::detail
+
+    S3_2 --> S4[Step 4: 设置对象头]:::step
+    S4 --> S4_1[Mark Word: 哈希码/GC分代年龄/锁状态]:::detail
+    S4_1 --> S4_2[Klass Pointer: 元数据指针指向类]:::detail
+
+    S4_2 --> S5[Step 5: 执行 init 方法]:::step
+    S5 --> S5_1[按照程序员意愿进行初始化]:::detail
+    S5_1 --> S5_2[执行构造方法]:::detail
+
+    S5_2 --> End((对象创建完成)):::root
+
+    %% 线条样式
+    linkStyle default stroke:#005D7B,stroke-width:1.5px,opacity:0.8
+```
 
 #### Step1:类加载检查
 

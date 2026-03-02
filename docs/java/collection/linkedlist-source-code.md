@@ -1,8 +1,13 @@
 ---
 title: LinkedList 源码分析
+description: LinkedList源码深度解析：剖析双向链表结构、Deque接口实现、头尾插入删除O(1)时间复杂度、与ArrayList性能对比及适用场景。
 category: Java
 tag:
   - Java集合
+head:
+  - - meta
+    - name: keywords
+      content: LinkedList源码,双向链表,Deque接口,LinkedList与ArrayList区别,插入删除性能,链表实现
 ---
 
 <!-- @include: @article-header.snippet.md -->

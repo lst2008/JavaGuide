@@ -1,5 +1,6 @@
 ---
 title: Java 必读经典书籍
+description: Java程序员必读书籍推荐，Java基础、并发编程、JVM虚拟机、Spring/SpringBoot框架、Netty网络编程、性能调优等经典书籍精选。
 category: 计算机书籍
 icon: "java"
 ---
@@ -12,7 +13,7 @@ icon: "java"
 
 《Head First Java》这本书的内容很轻松有趣，可以说是我学习编程初期最喜欢的几本书之一了。同时，这本书也是我的 Java 启蒙书籍。我在学习 Java 的初期多亏了这本书的帮助，自己才算是跨进 Java 语言的大门。
 
-我觉得我在 Java 这块能够坚持下来，这本书有很大的功劳。我身边的的很多朋友学习 Java 初期都是看的这本书。
+我觉得我在 Java 这块能够坚持下来，这本书有很大的功劳。我身边的很多朋友学习 Java 初期都是看的这本书。
 
 有很多小伙伴就会问了：**这本书适不适合编程新手阅读呢？**
 
@@ -109,20 +110,6 @@ Java 8 算是一个里程碑式的版本，现在一般企业还是用 Java 8 �
 这本书目前在豆瓣有 8.2 的评分，我个人觉得张秀宏老师写的挺好的，这本书值得更高的评分。
 
 另外，R 大在豆瓣发的[《从表到里学习 JVM 实现》](https://www.douban.com/doulist/2545443/)这篇文章中也推荐了很多不错的 JVM 相关的书籍，推荐小伙伴们去看看。
-
-再推荐两个视频给喜欢看视频学习的小伙伴。
-
-第 1 个是尚硅谷的宋红康老师讲的[《JVM 全套教程》](https://www.bilibili.com/video/BV1PJ411n7xZ)。这个课程的内容非常硬，一共有接近 400 小节。
-
-课程的内容分为 3 部分：
-
-1. 《内存与垃圾回收篇》
-2. 《字节码与类的加载篇》
-3. 《性能监控与调优篇》
-
-第 2 个是你假笨大佬的 **[《JVM 参数【Memory 篇】》](https://club.perfma.com/course/438755/list)** 教程，很厉害了！
-
-![](https://oss.javaguide.cn/java-guide-blog/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM0MzM3Mjcy,size_16,color_FFFFFF,t_70.png)
 
 ## 常用工具
 

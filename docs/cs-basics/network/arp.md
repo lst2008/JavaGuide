@@ -1,8 +1,13 @@
 ---
 title: ARP 协议详解(网络层)
+description: 讲解 ARP 的地址解析机制与报文流程，结合 ARP 表与广播/单播详解常见攻击与防御策略。
 category: 计算机基础
 tag:
   - 计算机网络
+head:
+  - - meta
+    - name: keywords
+      content: ARP,地址解析,IP到MAC,广播问询,单播响应,ARP表,欺骗
 ---
 
 每当我们学习一个新的网络协议的时候，都要把他结合到 OSI 七层模型中，或者是 TCP/IP 协议栈中来学习，一是要学习该协议在整个网络协议栈中的位置，二是要学习该协议解决了什么问题，地位如何？三是要学习该协议的工作原理，以及一些更深入的细节。
@@ -21,7 +26,7 @@ tag:
 
 MAC 地址的全称是 **媒体访问控制地址（Media Access Control Address）**。如果说，互联网中每一个资源都由 IP 地址唯一标识（IP 协议内容），那么一切网络设备都由 MAC 地址唯一标识。
 
-![路由器的背面就会注明 MAC 位址](./images/arp/2008410143049281.png)
+![路由器的背面就会注明 MAC 位址](https://oss.javaguide.cn/github/javaguide/cs-basics/network/router-back-will-indicate-mac-address.png)
 
 可以理解为，MAC 地址是一个网络设备真正的身份证号，IP 地址只是一种不重复的定位方式（比如说住在某省某市某街道的张三，这种逻辑定位是 IP 地址，他的身份证号才是他的 MAC 地址），也可以理解为 MAC 地址是身份证号，IP 地址是邮政地址。MAC 地址也有一些别称，如 LAN 地址、物理地址、以太网地址等。
 

@@ -1,5 +1,6 @@
 ---
 title: MyBatis常见面试题总结
+description: MyBatis常见面试题详解，涵盖#{}与${}区别、动态SQL、一级二级缓存、分页插件及Mapper映射原理。
 category: 框架
 icon: "database"
 tag:
@@ -7,10 +8,7 @@ tag:
 head:
   - - meta
     - name: keywords
-      content: MyBatis
-  - - meta
-    - name: description
-      content: 几道常见的 MyBatis 常见
+      content: MyBatis,MyBatis面试题,#{}与${},动态SQL,一级缓存,二级缓存,分页插件,Mapper映射
 ---
 
 <!-- @include: @small-advertisement.snippet.md -->
@@ -82,7 +80,7 @@ public interface StuMapper {
 
 能正常运行，并能得到相应的结果，这样就实现了在 Dao 接口中写重载方法。
 
-**Mybatis 的 Dao 接口可以有多个重载方法，但是多个接口对应的映射必须只有一个，否则启动会报错。**
+**Mybatis 的 Dao 接口可以有多个重载方法，但是多个方法对应的映射必须只有一个，否则启动会报错。**
 
 相关 issue：[更正：Dao 接口里的方法可以重载，但是 Mybatis 的 xml 里面的 ID 不允许重复！](https://github.com/Snailclimb/JavaGuide/issues/1122)。
 

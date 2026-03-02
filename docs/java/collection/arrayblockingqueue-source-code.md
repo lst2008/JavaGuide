@@ -1,8 +1,13 @@
 ---
 title: ArrayBlockingQueue 源码分析
+description: ArrayBlockingQueue源码深度解析：详解有界阻塞队列实现、生产者消费者模式应用、ReentrantLock+Condition并发控制、线程池工作队列机制。
 category: Java
 tag:
   - Java集合
+head:
+  - - meta
+    - name: keywords
+      content: ArrayBlockingQueue源码,阻塞队列,有界队列,生产者消费者模式,ReentrantLock,Condition,线程池工作队列
 ---
 
 ## 阻塞队列简介
@@ -11,7 +16,7 @@ tag:
 
 Java 阻塞队列的历史可以追溯到 JDK1.5 版本，当时 Java 平台增加了 `java.util.concurrent`，即我们常说的 JUC 包，其中包含了各种并发流程控制工具、并发容器、原子类等。这其中自然也包含了我们这篇文章所讨论的阻塞队列。
 
-为了解决高并发场景下多线程之间数据共享的问题，JDK1.5 版本中出现了 `ArrayBlockingQueue` 和 `LinkedBlockingQueue`，它们是带有生产者-消费者模式实现的并发容器。其中，`ArrayBlockingQueue` 是有界队列，即添加的元素达到上限之后，再次添加就会被阻塞或者抛出异常。而 `LinkedBlockingQueue` 则由链表构成的队列，正是因为链表的特性，所以 `LinkedBlockingQueue` 在添加元素上并不会向 `ArrayBlockingQueue` 那样有着较多的约束，所以 `LinkedBlockingQueue` 设置队列是否有界是可选的(注意这里的无界并不是指可以添加任务数量的元素，而是说队列的大小默认为 `Integer.MAX_VALUE`，近乎于无限大)。
+为了解决高并发场景下多线程之间数据共享的问题，JDK1.5 版本中出现了 `ArrayBlockingQueue` 和 `LinkedBlockingQueue`，它们是带有生产者-消费者模式实现的并发容器。其中，`ArrayBlockingQueue` 是有界队列，即添加的元素达到上限之后，再次添加就会被阻塞或者抛出异常。而 `LinkedBlockingQueue` 则由链表构成的队列，正是因为链表的特性，所以 `LinkedBlockingQueue` 在添加元素上并不会向 `ArrayBlockingQueue` 那样有着较多的约束，所以 `LinkedBlockingQueue` 设置队列是否有界是可选的(注意这里的无界并不是指可以添加任意数量的元素，而是说队列的大小默认为 `Integer.MAX_VALUE`，近乎于无限大)。
 
 随着 Java 的不断发展，JDK 后续的几个版本又对阻塞队列进行了不少的更新和完善:
 
@@ -226,11 +231,11 @@ public class DrainToExample {
 
 ![ArrayBlockingQueue 类图](https://oss.javaguide.cn/github/javaguide/java/collection/arrayblockingqueue-class-diagram.png)
 
-从图中我们可以看出，`ArrayBlockingQueue` 继承了阻塞队列 `BlockingQueue` 这个接口，不难猜出通过继承 `BlockingQueue` 这个接口之后，`ArrayBlockingQueue` 就拥有了阻塞队列那些常见的操作行为。
+从图中我们可以看出，`ArrayBlockingQueue` 实现了阻塞队列 `BlockingQueue` 这个接口，不难猜出通过实现 `BlockingQueue` 这个接口之后，`ArrayBlockingQueue` 就拥有了阻塞队列那些常见的操作行为。
 
 同时， `ArrayBlockingQueue` 还继承了 `AbstractQueue` 这个抽象类，这个继承了 `AbstractCollection` 和 `Queue` 的抽象类，从抽象类的特定和语义我们也可以猜出，这个继承关系使得 `ArrayBlockingQueue` 拥有了队列的常见操作。
 
-所以我们是否可以得出这样一个结论，通过继承 `AbstractQueue` 获得队列所有的操作模板，其实现的入队和出队操作的整体框架。然后 `ArrayBlockingQueue` 通过继承 `BlockingQueue` 获取到阻塞队列的常见操作并将这些操作实现，填充到 `AbstractQueue` 模板方法的细节中，由此 `ArrayBlockingQueue` 成为一个完整的阻塞队列。
+所以我们是否可以得出这样一个结论，通过继承 `AbstractQueue` 获得队列所有的操作模板，其实现的入队和出队操作的整体框架。然后 `ArrayBlockingQueue` 通过实现 `BlockingQueue` 获取到阻塞队列的常见操作并将这些操作实现，填充到 `AbstractQueue` 模板方法的细节中，由此 `ArrayBlockingQueue` 成为一个完整的阻塞队列。
 
 为了印证这一点，我们到源码中一探究竟。首先我们先来看看 `AbstractQueue`，从类的继承关系我们可以大致得出，它通过 `AbstractCollection` 获得了集合的常见操作方法，然后通过 `Queue` 接口获得了队列的特性。
 
@@ -244,7 +249,7 @@ public abstract class AbstractQueue<E>
 
 对于集合的操作无非是增删改查，所以我们不妨从添加方法入手，从源码中我们可以看到，它实现了 `AbstractCollection` 的 `add` 方法，其内部逻辑如下:
 
-1. 调用继承 `Queue` 接口的来的 `offer` 方法，如果 `offer` 成功则返回 `true`。
+1. 调用继承 `Queue` 接口得来的 `offer` 方法，如果 `offer` 成功则返回 `true`。
 2. 如果 `offer` 失败，即代表当前元素入队失败直接抛异常。
 
 ```java
@@ -258,7 +263,7 @@ public boolean add(E e) {
 
 而 `AbstractQueue` 中并没有对 `Queue` 的 `offer` 的实现，很明显这样做的目的是定义好了 `add` 的核心逻辑，将 `offer` 的细节交由其子类即我们的 `ArrayBlockingQueue` 实现。
 
-到此，我们对于抽象类 `AbstractQueue` 的分析就结束了，我们继续看看 `ArrayBlockingQueue` 中另一个重要的继承接口 `BlockingQueue`。
+到此，我们对于抽象类 `AbstractQueue` 的分析就结束了，我们继续看看 `ArrayBlockingQueue` 中实现的另一个重要接口 `BlockingQueue`。
 
 点开 `BlockingQueue` 之后，我们可以看到这个接口同样继承了 `Queue` 接口，这就意味着它也具备了队列所拥有的所有行为。同时，它还定义了自己所需要实现的方法。
 
@@ -302,11 +307,11 @@ public interface BlockingQueue<E> extends Queue<E> {
 }
 ```
 
-了解了 `BlockingQueue` 的常见操作后，我们就知道了 `ArrayBlockingQueue` 通过继承 `BlockingQueue` 的方法并实现后，填充到 `AbstractQueue` 的方法上，由此我们便知道了上文中 `AbstractQueue` 的 `add` 方法的 `offer` 方法是哪里是实现的了。
+了解了 `BlockingQueue` 的常见操作后，我们就知道了 `ArrayBlockingQueue` 通过实现 `BlockingQueue` 的方法并重写后，填充到 `AbstractQueue` 的方法上，由此我们便知道了上文中 `AbstractQueue` 的 `add` 方法的 `offer` 方法是哪里是实现的了。
 
 ```java
 public boolean add(E e) {
-  //AbstractQueue的offer来自下层的ArrayBlockingQueue从BlockingQueue继承并实现的offer方法
+  //AbstractQueue的offer来自下层的ArrayBlockingQueue从BlockingQueue实现并重写的offer方法
   if (offer(e))
       return true;
   else

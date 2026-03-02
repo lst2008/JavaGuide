@@ -1,8 +1,13 @@
 ---
 title: 十大经典排序算法总结
+description: 系统梳理十大经典排序算法，附复杂度与稳定性对比，覆盖比较类与非比较类排序的核心原理与实现场景，帮助快速选型与优化。
 category: 计算机基础
 tag:
   - 算法
+head:
+  - - meta
+    - name: keywords
+      content: 排序算法,快速排序,归并排序,堆排序,冒泡排序,选择排序,插入排序,希尔排序,桶排序,计数排序,基数排序,时间复杂度,空间复杂度,稳定性
 ---
 
 > 本文转自：<http://www.guoyaohua.com/sorting.html>，JavaGuide 对其做了补充完善。
@@ -357,9 +362,14 @@ public static int[] merge(int[] arr_1, int[] arr_2) {
 
 快速排序使用[分治法](https://zh.wikipedia.org/wiki/分治法)（Divide and conquer）策略来把一个序列分为较小和较大的 2 个子序列，然后递归地排序两个子序列。具体算法描述如下：
 
-1. 从序列中**随机**挑出一个元素，做为 “基准”(`pivot`)；
-2. 重新排列序列，将所有比基准值小的元素摆放在基准前面，所有比基准值大的摆在基准的后面（相同的数可以到任一边）。在这个操作结束之后，该基准就处于数列的中间位置。这个称为分区（partition）操作；
-3. 递归地把小于基准值元素的子序列和大于基准值元素的子序列进行快速排序。
+1. **选择基准（Pivot）** ：从数组中选一个元素作为基准。为了避免最坏情况，通常会随机选择。
+2. **分区（Partition）** ：重新排列序列，将所有比基准值小的元素摆放在基准前面，所有比基准值大的摆在基准的后面（相同的数可以到任一边）。在这个操作结束之后，该基准就处于数列的中间位置。
+3. **递归（Recurse）** ：递归地把小于基准值元素的子序列和大于基准值元素的子序列进行快速排序。
+
+**关于性能，这也是它与归并排序的关键区别：**
+
+- **平均和最佳情况：** 它的时间复杂度是 $O(nlogn)$。这种情况发生在每次分区都能把数组分成均等的两半。
+- **最坏情况：** 它的时间复杂度会退化到 $O(n^2)$。这发生在每次我们选的基准都是当前数组的最小值或最大值时，比如对一个已经排好序的数组，每次都选第一个元素做基准，这就会导致分区极其不均，算法退化成类似冒泡排序。这就是为什么**随机选择基准**非常重要。
 
 ### 图解算法
 
@@ -367,31 +377,60 @@ public static int[] merge(int[] arr_1, int[] arr_2) {
 
 ### 代码实现
 
-> 来源：[使用 Java 实现快速排序（详解）](https://segmentfault.com/a/1190000040022056)
-
 ```java
-public static int partition(int[] array, int low, int high) {
-    int pivot = array[high];
-    int pointer = low;
-    for (int i = low; i < high; i++) {
-        if (array[i] <= pivot) {
-            int temp = array[i];
-            array[i] = array[pointer];
-            array[pointer] = temp;
-            pointer++;
-        }
-        System.out.println(Arrays.toString(array));
+import java.util.concurrent.ThreadLocalRandom;
+
+class Solution {
+    public int[] sortArray(int[] a) {
+        quick(a, 0, a.length - 1);
+        return a;
     }
-    int temp = array[pointer];
-    array[pointer] = array[high];
-    array[high] = temp;
-    return pointer;
-}
-public static void quickSort(int[] array, int low, int high) {
-    if (low < high) {
-        int position = partition(array, low, high);
-        quickSort(array, low, position - 1);
-        quickSort(array, position + 1, high);
+
+    // 快速排序的核心递归函数
+    void quick(int[] a, int left, int right) {
+        if (left >= right) { // 递归终止条件：区间只有一个或没有元素
+            return;
+        }
+        int p = partition(a, left, right); // 分区操作，返回分区点索引
+        quick(a, left, p - 1); // 对左侧子数组递归排序
+        quick(a, p + 1, right); // 对右侧子数组递归排序
+    }
+
+    // 分区函数：将数组分为两部分，小于基准值的在左，大于基准值的在右
+    int partition(int[] a, int left, int right) {
+        // 随机选择一个基准点，避免最坏情况（如数组接近有序）
+        int idx = ThreadLocalRandom.current().nextInt(right - left + 1) + left;
+        swap(a, left, idx); // 将基准点放在数组的最左端
+        int pv = a[left]; // 基准值
+        int i = left + 1; // 左指针，指向当前需要检查的元素
+        int j = right; // 右指针，从右往左寻找比基准值小的元素
+
+        while (i <= j) {
+            // 左指针向右移动，直到找到一个大于等于基准值的元素
+            while (i <= j && a[i] < pv) {
+                i++;
+            }
+            // 右指针向左移动，直到找到一个小于等于基准值的元素
+            while (i <= j && a[j] > pv) {
+                j--;
+            }
+            // 如果左指针尚未越过右指针，交换两个不符合位置的元素
+            if (i <= j) {
+                swap(a, i, j);
+                i++;
+                j--;
+            }
+        }
+        // 将基准值放到分区点位置，使得基准值左侧小于它，右侧大于它
+        swap(a, j, left);
+        return j;
+    }
+
+    // 交换数组中两个元素的位置
+    void swap(int[] a, int i, int j) {
+        int t = a[i];
+        a[i] = a[j];
+        a[j] = t;
     }
 }
 ```

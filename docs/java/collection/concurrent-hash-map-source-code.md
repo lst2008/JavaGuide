@@ -1,11 +1,18 @@
 ---
 title: ConcurrentHashMap 源码分析
+description: ConcurrentHashMap源码深入解析：对比JDK1.7分段锁Segment与JDK1.8 CAS+Synchronized实现，理解高并发Map的线程安全机制与性能优化。
 category: Java
 tag:
   - Java集合
+head:
+  - - meta
+    - name: keywords
+      content: ConcurrentHashMap源码,线程安全Map,分段锁Segment,CAS操作,并发容器,JDK7与JDK8区别
 ---
 
-> 本文来自公众号：末读代码的投稿，原文地址：<https://mp.weixin.qq.com/s/AHWzboztt53ZfFZmsSnMSw> 。
+<!-- @include: @small-advertisement.snippet.md -->
+
+> 本文来自末读代码投稿：<https://mp.weixin.qq.com/s/AHWzboztt53ZfFZmsSnMSw> ，JavaGuide 对原文进行了大篇幅改进优化。
 
 上一篇文章介绍了 HashMap 源码，反响不错，也有很多同学发表了自己的观点，这次又来了，这次是 `ConcurrentHashMap` 了，作为线程安全的 HashMap ，它的使用频率也是很高。那么它的存储结构和实现原理是怎么样的呢？
 
@@ -15,7 +22,7 @@ tag:
 
 ![Java 7 ConcurrentHashMap 存储结构](https://oss.javaguide.cn/github/javaguide/java/collection/java7_concurrenthashmap.png)
 
-Java 7 中 `ConcurrentHashMap` 的存储结构如上图，`ConcurrnetHashMap` 由很多个 `Segment` 组合，而每一个 `Segment` 是一个类似于 `HashMap` 的结构，所以每一个 `HashMap` 的内部可以进行扩容。但是 `Segment` 的个数一旦**初始化就不能改变**，默认 `Segment` 的个数是 16 个，你也可以认为 `ConcurrentHashMap` 默认支持最多 16 个线程并发。
+Java 7 中 `ConcurrentHashMap` 的存储结构如上图，`ConcurrentHashMap` 由很多个 `Segment` 组合，而每一个 `Segment` 是一个类似于 `HashMap` 的结构，所以每一个 `HashMap` 的内部可以进行扩容。但是 `Segment` 的个数一旦**初始化就不能改变**，默认 `Segment` 的个数是 16 个，你也可以认为 `ConcurrentHashMap` 默认支持最多 16 个线程并发。
 
 ### 2. 初始化
 
@@ -413,6 +420,8 @@ public V get(Object key) {
 
 ## 2. ConcurrentHashMap 1.8
 
+总的来说 ，`ConcurrentHashMap` 在 Java8 中相对于 Java7 来说变化还是挺大的，
+
 ### 1. 存储结构
 
 ![Java8 ConcurrentHashMap 存储结构（图片来自 javadoop）](https://oss.javaguide.cn/github/javaguide/java/collection/java8_concurrenthashmap.png)
@@ -590,9 +599,64 @@ public V get(Object key) {
 3. 如果头节点 hash 值小于 0 ，说明正在扩容或者是红黑树，查找之。
 4. 如果是链表，遍历查找之。
 
-总结：
+### 5. size 计数
 
-总的来说 `ConcurrentHashMap` 在 Java8 中相对于 Java7 来说变化还是挺大的，
+`ConcurrentHashMap` 的 `size()` 方法用来获取当前 Map 中元素的总数，但在高并发场景下，如何准确且高效地统计元素数量是一个技术难点。Java8 采用了一套精巧的分段计数机制来解决这个问题。
+
+#### 5.1 为什么需要分段计数
+
+在并发环境下，如果多个线程同时执行 `put` 操作，它们都需要更新元素总数。如果使用一个共享的计数器变量，就会导致激烈的竞争——所有线程都在争抢同一个变量的修改权，这会严重影响性能。
+
+为了解决这个问题，`ConcurrentHashMap` 采用了**分散热点**的设计思想：不使用单一计数器，而是将计数分散到多个变量中。就像银行不会只开一个窗口办业务，而是开多个窗口分流客户一样，这样可以大大减少冲突。
+
+#### 5.2 baseCount 和 counterCells 的设计
+
+`ConcurrentHashMap` 内部维护了两个关键的计数相关字段：
+
+- **baseCount**：基础计数器，在没有竞争的情况下，直接通过 CAS 更新这个变量。可以把它理解为"主计数器"。
+- **counterCells**：计数器数组。当多个线程竞争 `baseCount` 失败时，会尝试将计数增量分散到 `counterCells` 数组的不同位置。
+  - 每个线程根据自己的 **Probe 值**（可理解为线程 ID 生成的一种哈希码）映射到数组的某个槽位，优先在这个“偏向的格子”里进行累加。
+  - **注意**：这个格子并不是严格意义上的“线程私有”，当哈希冲突时，多个线程仍然可能映射到同一个槽位并发更新。
+
+**举个例子**：假设有 10 个线程同时往 Map 中添加元素。第一个线程成功通过 CAS 更新了 `baseCount`，但后面 9 个线程在更新 `baseCount` 时发现有竞争，就会转而去 `counterCells` 数组中找一个位置进行累加。这 9 个线程可能分散到数组的不同位置（比如线程 2 在 `counterCells[1]`，线程 3 在 `counterCells[2]`），从而将竞争从一个点分散到了多个点。。
+
+#### 5.3 put 元素时如何更新计数
+
+在 `putVal` 方法的最后，我们可以看到调用了 `addCount(1L, binCount)` 方法，这个方法就是用来更新元素计数的。
+
+`addCount` 的执行逻辑大致可以概括为：
+
+1. **优先尝试更新 baseCount**
+
+   - 如果当前还没有启用 `counterCells`（`counterCells == null`），线程会先尝试通过 CAS 直接更新 `baseCount`。
+   - 如果 CAS 成功，说明竞争不激烈，直接返回即可。
+
+2. **竞争出现时，转向 counterCells**
+
+   - 如果 CAS 更新 `baseCount` 失败（说明有其他线程在竞争），或者 `counterCells` 已经存在（说明系统之前已经遇到过竞争），线程就会尝试在 `counterCells` 中更新：
+     - 根据自己的 probe 值映射到某个槽位；
+     - 对该槽位对应的 `CounterCell` 做一次 CAS 累加。
+   - 如果这个槽位为空或 CAS 仍然冲突，就会进入一个更“重”的路径 `fullAddCount`，在里面负责初始化槽位、重新选择槽位等。
+
+3. **动态初始化与扩容 counterCells**
+   - 当检测到竞争比较激烈（例如：某个 cell 的 CAS 也频繁失败）时，`fullAddCount` 会在一个轻量级的自旋锁 `cellsBusy` 保护下：
+     - 如果 `counterCells` 还没初始化，就初始化一个较小的数组（比如长度 2）；
+     - 如果已经存在并且长度还没达到上限（通常不超过 CPU 核数），就按 2 倍进行扩容，增加更多的计数槽位，把线程进一步打散。
+
+这种设计保证了：在低并发时只使用简单的 `baseCount`，路径非常短；在高并发时则自动切换到分段计数，通过 `counterCells` 和扩容机制摊薄竞争，兼顾了性能和准确性。
+
+#### 5.4 sumCount 如何计算元素总数
+
+当我们调用 `size()` 方法时，最终会调用 `sumCount()` 方法来计算元素总数。`sumCount()` 的逻辑非常简单直接：
+
+1. 读取 `baseCount` 的值作为基础值。
+2. 遍历 `counterCells` 数组，将所有非空位置的计数值累加到基础值上。
+3. 返回累加结果。
+
+**注意**：
+
+- **弱一致性**：`sumCount()` 全程**不加锁**。在计算期间如果有其他线程插入数据，返回的结果只是一个**近似值**。但在高并发场景下，追求“刹那间的精确总数”代价过大且无意义，近似值通常已足够。
+- **整型溢出**：`size()` 方法返回 `int` 类型。如果元素数量超过 `Integer.MAX_VALUE`，它只会返回 `Integer.MAX_VALUE`。如果需要获取精确的大容量计数，建议使用 Java 8 新增的 **`mappingCount()`** 方法，该方法返回 `long` 类型。
 
 ## 3. 总结
 
